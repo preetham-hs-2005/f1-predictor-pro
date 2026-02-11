@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Leaderboard from "./pages/Leaderboard";
 import Predict from "./pages/Predict";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/predict/:raceId/:type?" element={<Predict />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
