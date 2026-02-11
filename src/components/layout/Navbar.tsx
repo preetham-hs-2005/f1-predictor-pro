@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Trophy, LayoutDashboard, LogOut, Menu, Flag } from "lucide-react";
+import { Trophy, LayoutDashboard, LogOut, Menu, Flag, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 
@@ -9,6 +9,8 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
+
+const adminNavItem = { to: "/admin", label: "Admin", icon: Shield };
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -41,6 +43,18 @@ const Navbar = () => {
               </Button>
             </Link>
           ))}
+          {user?.role === "admin" && (
+            <Link to={adminNavItem.to}>
+              <Button
+                variant={location.pathname === adminNavItem.to ? "secondary" : "ghost"}
+                size="sm"
+                className="gap-2"
+              >
+                <adminNavItem.icon className="h-4 w-4" />
+                {adminNavItem.label}
+              </Button>
+            </Link>
+          )}
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
@@ -78,6 +92,17 @@ const Navbar = () => {
                   </Button>
                 </Link>
               ))}
+              {user?.role === "admin" && (
+                <Link to={adminNavItem.to} onClick={() => setOpen(false)}>
+                  <Button
+                    variant={location.pathname === adminNavItem.to ? "secondary" : "ghost"}
+                    className="w-full justify-start gap-2"
+                  >
+                    <adminNavItem.icon className="h-4 w-4" />
+                    {adminNavItem.label}
+                  </Button>
+                </Link>
+              )}
               <Button variant="ghost" onClick={logout} className="justify-start gap-2">
                 <LogOut className="h-4 w-4" />
                 Logout
