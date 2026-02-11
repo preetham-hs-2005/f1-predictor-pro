@@ -307,6 +307,19 @@ const Predict = () => {
           </p>
         </section>
 
+        {/* Validation hints */}
+        {!locked && !canSubmit && (
+          <div className="mb-4 text-xs text-muted-foreground space-y-1">
+            {!p1 && <p className="text-f1-warning">• Select a driver for P1</p>}
+            {!p2 && <p className="text-f1-warning">• Select a driver for P2</p>}
+            {!p3 && <p className="text-f1-warning">• Select a driver for P3</p>}
+            {!pole && <p className="text-f1-warning">• Select pole position</p>}
+            {unexpected.length < 10 && (
+              <p className="text-f1-warning">• Unexpected prediction needs at least 10 characters ({unexpected.length}/10)</p>
+            )}
+          </div>
+        )}
+
         {/* Submit */}
         <Button
           onClick={handleSubmit}
