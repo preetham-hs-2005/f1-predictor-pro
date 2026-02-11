@@ -27,7 +27,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/predict/:raceId" element={<Predict />} />
+            <Route path="/predict/:raceId/:type?" element={<Predict />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
