@@ -14,20 +14,23 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
-      const result = login(email, password);
+    try {
+      const result = await login(email, password);
       if (result.success) {
         toast.success("Welcome back!");
         navigate("/dashboard");
       } else {
         toast.error(result.error || "Invalid credentials");
       }
+    } catch (error) {
+      toast.error("An error occurred during login");
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (

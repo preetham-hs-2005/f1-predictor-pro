@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import * as authApi from "@/lib/api/auth";
+import { apiClient } from "@/lib/api/client";
 
 export interface User {
   id: string;
@@ -8,86 +10,92 @@ export interface User {
   totalPoints: number;
 }
 
+interface SessionData {
+  user: User;
+  token: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  register: (name: string, email: string, password: string) => { success: boolean; error?: string };
-  logout: () => void;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface StoredUser extends User {
-  password: string;
-}
-
-const USERS_KEY = "f1_users";
 const SESSION_KEY = "f1_session";
-
-const getStoredUsers = (): StoredUser[] => {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-  } catch {
-    return [];
-  }
-};
-
-const saveStoredUsers = (users: StoredUser[]) => {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-};
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Initialize session from localStorage on mount
   useEffect(() => {
     try {
       const session = localStorage.getItem(SESSION_KEY);
       if (session) {
-        setUser(JSON.parse(session));
+        const sessionData: SessionData = JSON.parse(session);
+        setUser(sessionData.user);
+        // Restore token to API client
+        if (sessionData.token) {
+          apiClient.setAuthToken(sessionData.token, sessionData.user);
+        }
       }
     } catch {
       localStorage.removeItem(SESSION_KEY);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  const login = (email: string, password: string) => {
-    const users = getStoredUsers();
-    const found = users.find((u) => u.email === email.toLowerCase() && u.password === password);
-    if (!found) return { success: false, error: "Invalid credentials" };
-    const { password: _, ...userWithoutPassword } = found;
-    setUser(userWithoutPassword);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(userWithoutPassword));
-    return { success: true };
-  };
-
-  const register = (name: string, email: string, password: string) => {
-    const users = getStoredUsers();
-    if (users.some((u) => u.email === email.toLowerCase())) {
-      return { success: false, error: "Email already exists" };
+  const login = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const userData = await authApi.loginUser(email, password);
+      setUser(userData);
+      // Token is stored by authApi.loginUser via apiClient.setAuthToken
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      return { success: false, error: message };
+    } finally {
+      setIsLoading(false);
     }
-    const newUser: StoredUser = {
-      id: crypto.randomUUID(),
-      name,
-      email: email.toLowerCase(),
-      password,
-      role: "user",
-      totalPoints: 0,
-    };
-    saveStoredUsers([...users, newUser]);
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(userWithoutPassword));
-    return { success: true };
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem(SESSION_KEY);
+  const register = async (name: string, email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const userData = await authApi.registerUser(name, email, password);
+      
+      setUser(userData);
+      // Note: apiClient.setAuthToken is called in authApi.registerUser
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Registration failed";
+      return { success: false, error: message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await authApi.logoutUser();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem(SESSION_KEY);
+      setIsLoading(false);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { type RaceWeekend } from "@/lib/data/raceCalendar";
 import { drivers } from "@/lib/data/drivers";
+import { submitPrediction, getUserPrediction } from "@/lib/api/predictions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,59 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trophy } from "lucide-react";
+import { Trophy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
-const PREDICTIONS_KEY = "f1_predictions";
-
-export interface Prediction {
-  raceId: string;
-  userId: string;
-  type: "sprint" | "race";
-  p1: string;
-  p2: string;
-  p3: string;
-  pole: string;
-  unexpected: string;
-}
-
-export const getSavedPrediction = (
-  raceId: string,
-  userId: string,
-  type: "sprint" | "race"
-): Prediction | null => {
-  try {
-    const all: Prediction[] = JSON.parse(
-      localStorage.getItem(PREDICTIONS_KEY) || "[]"
-    );
-    return (
-      all.find(
-        (p) => p.raceId === raceId && p.userId === userId && p.type === type
-      ) || null
-    );
-  } catch {
-    return null;
-  }
-};
-
-const savePrediction = (prediction: Prediction) => {
-  try {
-    const all: Prediction[] = JSON.parse(
-      localStorage.getItem(PREDICTIONS_KEY) || "[]"
-    );
-    const idx = all.findIndex(
-      (p) =>
-        p.raceId === prediction.raceId &&
-        p.userId === prediction.userId &&
-        p.type === prediction.type
-    );
-    if (idx >= 0) all[idx] = prediction;
-    else all.push(prediction);
-    localStorage.setItem(PREDICTIONS_KEY, JSON.stringify(all));
-  } catch {
-    // ignore
-  }
-};
 
 interface PredictionFormProps {
   race: RaceWeekend;
@@ -82,27 +32,39 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
   const [p3, setP3] = useState("");
   const [pole, setPole] = useState("");
   const [unexpected, setUnexpected] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
 
   const isSprint = type === "sprint";
   const pointMultiplier = isSprint ? 0.5 : 1;
 
+  // Load existing prediction from API
   useEffect(() => {
-    if (race && user) {
-      const saved = getSavedPrediction(race.id, user.id, type);
-      if (saved) {
-        setP1(saved.p1);
-        setP2(saved.p2);
-        setP3(saved.p3);
-        setPole(saved.pole);
-        setUnexpected(saved.unexpected);
+    const loadPrediction = async () => {
+      if (!user) return;
+
+      try {
+        setInitializing(true);
+        const prediction = await getUserPrediction(race.id);
+        setP1(prediction.predictedP1);
+        setP2(prediction.predictedP2);
+        setP3(prediction.predictedP3);
+        setPole(prediction.predictedPole);
+        setUnexpected(prediction.unexpectedStatement);
+      } catch {
+        // No existing prediction, form stays empty
+      } finally {
+        setInitializing(false);
       }
-    }
-  }, [race, user, type]);
+    };
+
+    loadPrediction();
+  }, [race.id, user]);
 
   const canSubmit =
-    p1 && p2 && p3 && pole && unexpected.length >= 10 && !locked;
+    p1 && p2 && p3 && pole && unexpected.length >= 10 && !locked && !loading;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!user) return;
 
     const podium = [p1, p2, p3];
@@ -116,22 +78,36 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
       return;
     }
 
-    savePrediction({
-      raceId: race.id,
-      userId: user.id,
-      type,
-      p1,
-      p2,
-      p3,
-      pole,
-      unexpected,
-    });
+    try {
+      setLoading(true);
+      await submitPrediction({
+        raceWeekendId: race.id,
+        predictedP1: p1,
+        predictedP2: p2,
+        predictedP3: p3,
+        predictedPole: pole,
+        unexpectedStatement: unexpected,
+      });
 
-    toast.success(
-      `${isSprint ? "Sprint" : "Race"} prediction submitted!`
-    );
-    navigate("/dashboard");
+      toast.success(
+        `${isSprint ? "Sprint" : "Race"} prediction submitted!`
+      );
+      navigate("/dashboard");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to submit prediction";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (initializing) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -305,9 +281,12 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         className="w-full"
         size="lg"
       >
+        {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
         {locked
           ? "Predictions Locked"
-          : `Submit ${isSprint ? "Sprint" : "Race"} Prediction`}
+          : loading
+            ? "Submitting..."
+            : `Submit ${isSprint ? "Sprint" : "Race"} Prediction`}
       </Button>
     </>
   );

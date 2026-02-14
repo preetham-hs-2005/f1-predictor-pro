@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Leaderboard from "./pages/Leaderboard";
 import Predict from "./pages/Predict";
+import PredictionHistory from "./pages/PredictionHistory";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/predictions" element={<PredictionHistory />} />
             <Route path="/predict/:raceId/:type?" element={<Predict />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />

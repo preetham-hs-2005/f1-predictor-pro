@@ -1,13 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Trophy, LayoutDashboard, LogOut, Menu, Flag, Shield } from "lucide-react";
+import { Trophy, LayoutDashboard, LogOut, Menu, Flag, Shield, History } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/predictions", label: "History", icon: History },
 ];
 
 const adminNavItem = { to: "/admin", label: "Admin", icon: Shield };

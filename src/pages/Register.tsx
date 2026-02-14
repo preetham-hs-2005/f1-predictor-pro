@@ -15,7 +15,7 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (name.length < 2 || name.length > 50) {
@@ -28,16 +28,19 @@ const Register = () => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const result = register(name, email, password);
+    try {
+      const result = await register(name, email, password);
       if (result.success) {
         toast.success("Welcome to the grid!");
         navigate("/dashboard");
       } else {
         toast.error(result.error || "Registration failed");
       }
+    } catch (error) {
+      toast.error("An error occurred during registration");
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (
