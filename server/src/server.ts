@@ -29,6 +29,7 @@ app.use(cors({
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
     "http://127.0.0.1:8081",
+    "https://f1-predictor-pro-six.vercel.app",
   ],
   credentials: true,
 }));
