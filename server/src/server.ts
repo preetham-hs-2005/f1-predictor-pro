@@ -10,12 +10,12 @@ dotenv.config({ path: path.join(__dirname, "../.env.local") });
 
 import express from "express";
 import cors from "cors";
-import { connectDB } from "./utils/db";
-import { errorHandler } from "./middleware/errorHandler";
-import authRoutes from "./routes/auth";
-import predictionsRoutes from "./routes/predictions";
-import leaderboardRoutes from "./routes/leaderboard";
-import adminRoutes from "./routes/admin";
+import { connectDB } from "./utils/db.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import authRoutes from "./routes/auth.js";
+import predictionsRoutes from "./routes/predictions.js";
+import leaderboardRoutes from "./routes/leaderboard.js";
+import adminRoutes from "./routes/admin.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;

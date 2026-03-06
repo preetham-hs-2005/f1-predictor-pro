@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { getDB } from "../utils/db";
+import { getDB } from "../utils/db.js";
 
 export interface PredictionDocument {
   _id?: ObjectId;

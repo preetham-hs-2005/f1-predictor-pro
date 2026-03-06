@@ -1,8 +1,8 @@
 import { ObjectId } from "mongodb";
-import { getDB } from "../utils/db";
-import { User } from "./User";
-import { Prediction } from "./Prediction";
-import { Results } from "./Results";
+import { getDB } from "../utils/db.js";
+import { User } from "./User.js";
+import { Prediction } from "./Prediction.js";
+import { Results } from "./Results.js";
 
 export interface LeaderboardEntry {
   rank: number;

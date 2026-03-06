@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
-import { Leaderboard } from "../models/Leaderboard";
-import { Results } from "../models/Results";
-import { authMiddleware } from "../middleware/auth";
+import { Leaderboard } from "../models/Leaderboard.js";
+import { Results } from "../models/Results.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 

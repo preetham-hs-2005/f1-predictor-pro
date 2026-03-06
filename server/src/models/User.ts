@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
-import { getDB } from "../utils/db";
-import { hashPassword, comparePassword } from "../utils/password";
+import { getDB } from "../utils/db.js";
+import { hashPassword, comparePassword } from "../utils/password.js";
 
 export interface UserDocument {
   _id?: ObjectId;

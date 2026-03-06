@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
-import { Prediction } from "../models/Prediction";
-import { authMiddleware } from "../middleware/auth";
+import { Prediction } from "../models/Prediction.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
-import { User } from "../models/User";
-import { generateToken } from "../utils/jwt";
-import { authMiddleware } from "../middleware/auth";
+import { User } from "../models/User.js";
+import { generateToken } from "../utils/jwt.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 
