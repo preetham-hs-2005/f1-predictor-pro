@@ -35,6 +35,9 @@ export class Results {
         },
         { returnDocument: "after" }
       );
+      if (!updated) {
+        throw new Error("Failed to update race result");
+      }
       return updated as unknown as RaceResult;
     }
 
