@@ -35,7 +35,7 @@ export class Results {
         },
         { returnDocument: "after" }
       );
-      return updated.value as RaceResult;
+      return updated as unknown as RaceResult;
     }
 
     const insertResult = await collection.insertOne({

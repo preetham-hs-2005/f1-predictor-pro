@@ -90,7 +90,7 @@ export class Prediction {
       { returnDocument: "after" }
     );
 
-    return result.value || null;
+    return result || null;
   }
 
   static async delete(
