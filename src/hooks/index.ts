@@ -8,3 +8,5 @@ export * from "./use-toast";
 export { useLeaderboard } from "./useLeaderboard";
 export { usePredictions } from "./usePredictions";
 export { useRaceWeekends } from "./useRaceWeekends";
+export { useDiscussions, useDiscussion } from "./useDiscussions";
+export type { Discussion, Message, Poll } from "@/lib/api/discussions";

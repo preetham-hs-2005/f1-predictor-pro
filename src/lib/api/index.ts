@@ -8,3 +8,4 @@ export * from "./auth";
 export * from "./predictions";
 export * from "./leaderboard";
 export * from "./weekends";
+export * from "./discussions";
