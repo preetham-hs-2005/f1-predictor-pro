@@ -64,6 +64,7 @@ router.post("/register", async (req: Request, res: Response) => {
     const token = generateToken({
       userId: user._id!.toString(),
       email: user.email,
+      name: user.name,
       role: user.role,
     });
 
@@ -114,6 +115,7 @@ router.post("/login", async (req: Request, res: Response) => {
     const token = generateToken({
       userId: user._id!.toString(),
       email: user.email,
+      name: user.name,
       role: user.role,
     });
 
