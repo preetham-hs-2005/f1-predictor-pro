@@ -42,6 +42,12 @@ A full-stack web application for Formula 1 enthusiasts to make race predictions,
 - **Test Data Cleanup** - Remove test data from database
 - **Score Calculation** - Automatic scoring engine
 
+### Discussions & Polls
+- **Discussion Threads** - Categorized discussions with real-time updates via WebSockets
+- **Messaging System** - Send, edit, delete, and like messages
+- **Polling System** - Single/multiple choice polls with real-time vote updates
+- **Moderation** - Admin controls for deleting content and pinning discussions
+
 ## 🛠 Tech Stack
 
 ### Frontend
@@ -58,6 +64,7 @@ A full-stack web application for Formula 1 enthusiasts to make race predictions,
 - **Language**: TypeScript with tsx loader
 - **Database**: MongoDB Atlas (Cloud)
 - **Authentication**: JWT (JSON Web Tokens)
+- **Real-Time Comm**: WebSockets (`ws` standard) for instant chat & poll updates
 - **Security**: bcryptjs for password hashing
 - **Validation**: Custom validation middleware
 
@@ -72,58 +79,68 @@ A full-stack web application for Formula 1 enthusiasts to make race predictions,
 f1-predictor-pro/
 ├── server/                          # Express backend
 │   ├── src/
-│   │   ├── models/
-│   │   │   ├── User.ts             # User schema and methods
-│   │   │   ├── Prediction.ts       # Prediction schema
-│   │   │   ├── Results.ts          # Race results schema
-│   │   │   └── Leaderboard.ts      # Leaderboard calculations
-│   │   ├── routes/
-│   │   │   ├── auth.ts             # Authentication endpoints
-│   │   │   ├── predictions.ts      # Prediction endpoints
-│   │   │   ├── leaderboard.ts      # Leaderboard endpoints
-│   │   │   └── admin.ts            # Admin utilities
+│   │   ├── models/                 # Database Schemas
+│   │   │   ├── User.ts
+│   │   │   ├── Prediction.ts
+│   │   │   ├── Results.ts
+│   │   │   ├── Leaderboard.ts
+│   │   │   ├── Discussion.ts       # Race discussions schemas
+│   │   │   ├── Message.ts          # Discussion chat messages
+│   │   │   ├── Poll.ts             # Discussion polls
+│   │   │   └── PollVote.ts         # User poll votes   
+│   │   ├── routes/                 # API Routes
+│   │   │   ├── auth.ts
+│   │   │   ├── predictions.ts
+│   │   │   ├── leaderboard.ts
+│   │   │   ├── discussions.ts      # Discussions & Polls endpoints
+│   │   │   └── admin.ts            # System admin utilities
 │   │   ├── middleware/
 │   │   │   ├── auth.ts             # JWT verification
 │   │   │   └── errorHandler.ts     # Error handling
 │   │   ├── utils/
 │   │   │   ├── db.ts               # MongoDB connection
 │   │   │   └── jwt.ts              # JWT utilities
-│   │   └── server.ts               # Express app setup
+│   │   └── server.ts               # Express & WebSocket app setup
 │   └── package.json
 │
 ├── src/                             # React frontend
 │   ├── components/
 │   │   ├── layout/
-│   │   │   └── Navbar.tsx          # Navigation bar
+│   │   │   └── Navbar.tsx          # Main navigation bar
 │   │   ├── prediction/
-│   │   │   └── PredictionForm.tsx  # Prediction submission form
-│   │   ├── dashboard/              # Dashboard components
-│   │   ├── admin/                  # Admin components
-│   │   └── ui/                     # shadcn/ui components
+│   │   │   └── PredictionForm.tsx  # Race predictions form
+│   │   ├── dashboard/              # User dashboard widgets
+│   │   ├── admin/                  # Content moderation components
+│   │   ├── discussions/            # Realtime discussion & poll UIs
+│   │   └── ui/                     # shadcn/ui shared components
 │   ├── contexts/
-│   │   └── AuthContext.tsx         # Auth state management
-│   ├── hooks/
-│   │   ├── useLeaderboard.ts       # Leaderboard hook
-│   │   ├── usePredictions.ts       # Predictions hook
-│   │   └── useRaceWeekends.ts      # Race weekends hook
+│   │   └── AuthContext.tsx         # Global auth state
+│   ├── hooks/                      # Custom data fetching hooks
+│   │   ├── useLeaderboard.ts
+│   │   ├── usePredictions.ts
+│   │   ├── useDiscussions.ts       # Race discussions & voting hook
+│   │   └── useRaceWeekends.ts
 │   ├── lib/
-│   │   ├── api/
-│   │   │   ├── client.ts           # HTTP client wrapper
-│   │   │   ├── auth.ts             # Auth API calls
-│   │   │   ├── predictions.ts      # Predictions API calls
-│   │   │   └── leaderboard.ts      # Leaderboard API calls
-│   │   └── utils.ts                # Utility functions
-│   ├── pages/
-│   │   ├── Index.tsx               # Home page
-│   │   ├── Dashboard.tsx           # User dashboard
-│   │   ├── Predict.tsx             # Prediction page
-│   │   ├── PredictionHistory.tsx   # History page
-│   │   ├── Leaderboard.tsx         # Leaderboard page
-│   │   ├── Login.tsx               # Login page
-│   │   ├── Register.tsx            # Registration page
-│   │   └── NotFound.tsx            # 404 page
-│   ├── App.tsx                     # Main app component
-│   └── main.tsx                    # Entry point
+│   │   ├── api/                    # Axios API request wrappers
+│   │   │   ├── client.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── predictions.ts
+│   │   │   ├── leaderboard.ts
+│   │   │   └── discussions.ts
+│   │   └── utils.ts
+│   ├── pages/                      # Application Route Views
+│   │   ├── Index.tsx               # Landing page
+│   │   ├── Dashboard.tsx           # User Home
+│   │   ├── Predict.tsx             # Predicition submission
+│   │   ├── PredictionHistory.tsx   # Past race predictions
+│   │   ├── Leaderboard.tsx         # Global rank standings
+│   │   ├── Discussions.tsx         # Live WebSockets chat & polls
+│   │   ├── Admin.tsx               # Admin moderation console
+│   │   ├── Login.tsx               
+│   │   ├── Register.tsx            
+│   │   └── NotFound.tsx            
+│   ├── App.tsx                     # React Router configurations
+│   └── main.tsx                    # React Entry
 │
 ├── public/                          # Static assets
 ├── index.html                       # HTML template
@@ -382,6 +399,13 @@ Content-Type: application/json
 Response: 201 Created
 ```
 
+### Discussions & Polls
+Full RESTful API available at `/api/discussions`:
+- **Discussions**: `GET`, `POST`, `PATCH`, `DELETE` operations
+- **Messages**: `GET`, `POST`, `PATCH`, `DELETE` nested under discussions, plus `like` action
+- **Polls**: `GET`, `POST`, `DELETE` operations, plus `vote` and `close` actions
+- **WebSockets**: Supports real-time updates for joining, messages, and poll-votes.
+
 ## 📊 Database Schema
 
 ### Users Collection
@@ -429,6 +453,12 @@ Response: 201 Created
   updatedAt: Date
 }
 ```
+
+### Discussions & Poll Collections
+- **discussions**: Discussion threads
+- **messages**: Real-time websocket chat messages within discussions
+- **polls**: User-generated or admin-generated polls inside of threads
+- **pollVotes**: Dedicated vote counting to ensure single votes per user per poll
 
 ## 🎯 Scoring System
 

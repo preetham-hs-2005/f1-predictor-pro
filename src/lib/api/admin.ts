@@ -42,6 +42,7 @@ export interface AdminPrediction {
   p2: string;
   p3: string;
   pole: string;
+  predictedConstructor?: string;
   unexpected: string;
   score: number;
   createdAt?: string;
@@ -70,6 +71,7 @@ export interface ScoreEntry {
   p3Points: number;
   polePoints: number;
   podiumBonusPoints: number;
+  constructorPoints?: number;
   unexpectedPoints: number;
   total: number;
   createdAt?: string;
@@ -313,5 +315,70 @@ export async function rescoreRace(
   } catch (error) {
     console.error("Failed to rescore race:", error);
     return { success: false, message: "Failed to rescore race" };
+  }
+}
+
+/**
+ * Get actual database statistics (collections count, size)
+ */
+export async function getDatabaseStats() {
+  try {
+    const response = await client.request<{ success: boolean; data: any }>(
+      "/api/admin/data/stats"
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch database stats:", error);
+    return null;
+  }
+}
+
+/**
+ * Export full database JSON
+ */
+export async function exportDatabase() {
+  try {
+    const response = await client.request<{ success: boolean; data: any; exportDate: string; version: string }>(
+      "/api/admin/data/export"
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to export database:", error);
+    throw error;
+  }
+}
+
+/**
+ * Import database from JSON
+ */
+export async function importDatabase(backupData: any): Promise<boolean> {
+  try {
+    const response = await client.request<{ success: boolean; message: string }>(
+      "/api/admin/data/import",
+      {
+        method: "POST",
+        body: JSON.stringify(backupData),
+      }
+    );
+    return response.success;
+  } catch (error) {
+    console.error("Failed to import database:", error);
+    throw error;
+  }
+}
+
+/**
+ * Clear all user/prediction/score data from MongoDB
+ */
+export async function clearDatabase(): Promise<boolean> {
+  try {
+    const response = await client.request<{ success: boolean }>(
+      "/api/admin/data/clear",
+      { method: "DELETE" }
+    );
+    return response.success;
+  } catch (error) {
+    console.error("Failed to clear database:", error);
+    throw error;
   }
 }

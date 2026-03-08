@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { getAdminUsers, toggleUserAdminRole, deleteAdminUser, getUserPredictions, toggleUserLeaderboardVisibility, type AdminUser, type AdminPrediction } from "@/lib/api/admin";
-import { getDriverById } from "@/lib/data/drivers";
+import { useDrivers } from "@/hooks/useDrivers";
 import { raceCalendar } from "@/lib/data/raceCalendar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { Shield, ShieldOff, Trash2, Download, Search, Filter, TrendingUp, Eye, E
 
 const AdminUsersAdvanced = () => {
   const { user: currentUser } = useAuth();
+  const { getDriverById } = useDrivers(true);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -439,6 +440,10 @@ const AdminUsersAdvanced = () => {
                     <div className="p-2 rounded bg-background/30">
                       <p className="text-muted-foreground">Pole</p>
                       <p className="font-semibold">{getDriverById(pred.pole)?.name || pred.pole}</p>
+                    </div>
+                    <div className="p-2 rounded bg-background/30 col-span-2 sm:col-span-4">
+                      <p className="text-muted-foreground">Constructor</p>
+                      <p className="font-semibold">{pred.predictedConstructor || "None"}</p>
                     </div>
                   </div>
 

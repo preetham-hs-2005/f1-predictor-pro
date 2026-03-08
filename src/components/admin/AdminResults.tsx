@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { raceCalendar } from "@/lib/data/raceCalendar";
-import { drivers } from "@/lib/data/drivers";
+import { useDrivers } from "@/hooks/useDrivers";
 import { getAdminResults, saveAdminResult, getAdminScores } from "@/lib/api/admin";
 import {
   Select,
@@ -29,6 +29,15 @@ const AdminResults = () => {
   const [p2, setP2] = useState("");
   const [p3, setP3] = useState("");
   const [pole, setPole] = useState("");
+  const [bestConstructor, setBestConstructor] = useState("");
+
+  const { drivers, isLoading: loadingDrivers } = useDrivers();
+  const teamsWithColors = Array.from(new Set(drivers.map(d => d.team)))
+    .sort()
+    .map(team => {
+      const driver = drivers.find(d => d.team === team);
+      return { team, color: driver?.teamColor || "#FFFFFF" };
+    });
 
   // Load results and scores from MongoDB
   useEffect(() => {
@@ -54,11 +63,13 @@ const AdminResults = () => {
       setP2(result.p2);
       setP3(result.p3);
       setPole(result.pole);
+      setBestConstructor(result.bestConstructor || "");
     } else {
       setP1("");
       setP2("");
       setP3("");
       setPole("");
+      setBestConstructor("");
     }
   };
 
@@ -74,7 +85,7 @@ const AdminResults = () => {
   };
 
   const handleSubmit = async () => {
-    if (!p1 || !p2 || !p3 || !pole) {
+    if (!p1 || !p2 || !p3 || !pole || !bestConstructor) {
       toast.error("All positions must be filled");
       return;
     }
@@ -84,7 +95,7 @@ const AdminResults = () => {
       return;
     }
 
-    const result = { raceId: selectedRace, type: resultType, p1, p2, p3, pole };
+    const result = { raceId: selectedRace, type: resultType, p1, p2, p3, pole, bestConstructor };
     try {
       await saveAdminResult(result);
       // Refresh results
@@ -120,7 +131,7 @@ const AdminResults = () => {
 
   return (
     <div className="space-y-6">
-      {loading ? (
+      {loading || loadingDrivers ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Loading race results...</p>
         </div>
@@ -203,6 +214,29 @@ const AdminResults = () => {
                   </Select>
                 </div>
               ))}
+            </div>
+
+            {/* Constructor Result */}
+            <div className="mb-4">
+              <label className="text-xs text-muted-foreground mb-1 block">Best Scoring Constructor</label>
+              <Select value={bestConstructor} onValueChange={setBestConstructor}>
+                <SelectTrigger className="bg-background/50">
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamsWithColors.map((t) => (
+                    <SelectItem key={t.team} value={t.team}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: t.color }}
+                        />
+                        {t.team}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Button onClick={handleSubmit} className="w-full" size="lg">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { raceCalendar } from "@/lib/data/raceCalendar";
-import { getDriverById } from "@/lib/data/drivers";
+import { useDrivers } from "@/hooks/useDrivers";
 import { getAdminPredictions, getAdminScores, type AdminPrediction, type ScoreEntry, awardUnexpectedPoints, revokeUnexpectedPoints } from "@/lib/api/admin";
 import {
   Select,
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Zap, Award, X } from "lucide-react";
 
 const AdminPredictions = () => {
+  const { getDriverById } = useDrivers(true);
   const [selectedRace, setSelectedRace] = useState("");
   const [predType, setPredType] = useState<"race" | "sprint">("race");
   const [allPredictions, setAllPredictions] = useState<AdminPrediction[]>([]);
@@ -80,6 +81,7 @@ const AdminPredictions = () => {
           p3Points: 0,
           polePoints: 0,
           podiumBonusPoints: 0,
+          constructorPoints: 0,
           unexpectedPoints: 15,
           total: 15,
         }];
@@ -242,6 +244,12 @@ const AdminPredictions = () => {
                         {getDriverName(pred.pole)}
                       </span>
                     </div>
+                    <div className="col-span-2 sm:col-span-4 mt-1">
+                      <span className="text-muted-foreground">Constructor:</span>{" "}
+                      <span className={score?.constructorPoints ? "text-f1-success" : ""}>
+                        {pred.predictedConstructor || "None"}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="text-xs">
@@ -257,6 +265,7 @@ const AdminPredictions = () => {
                       {score.p3Points > 0 && <Badge variant="outline" className="text-f1-success border-f1-success/30">P3 +{score.p3Points}</Badge>}
                       {score.polePoints > 0 && <Badge variant="outline" className="text-f1-success border-f1-success/30">Pole +{score.polePoints}</Badge>}
                       {score.podiumBonusPoints > 0 && <Badge variant="outline" className="text-f1-gold border-f1-gold/30">Podium Bonus +{score.podiumBonusPoints}</Badge>}
+                      {score.constructorPoints > 0 && <Badge variant="outline" className="text-f1-gold border-f1-gold/30">Constructor +{score.constructorPoints}</Badge>}
                       {score.unexpectedPoints > 0 && <Badge variant="outline" className="text-f1-warning border-f1-warning/30">Unexpected +{score.unexpectedPoints}</Badge>}
                     </div>
                   )}

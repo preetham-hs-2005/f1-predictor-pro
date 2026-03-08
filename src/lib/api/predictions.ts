@@ -24,6 +24,7 @@ export interface Prediction {
   predictedP2: string;
   predictedP3: string;
   predictedPole: string;
+  predictedConstructor?: string;
   unexpectedStatement: string;
   unexpectedAwarded: boolean;
   calculatedPoints: CalculatedPoints | null;
@@ -37,6 +38,7 @@ export interface SubmitPredictionRequest {
   predictedP2: string;
   predictedP3: string;
   predictedPole: string;
+  predictedConstructor?: string;
   unexpectedStatement: string;
 }
 

@@ -28,3 +28,10 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     res.status(401).json({ success: false, error: "Authentication failed" });
   }
 }
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ success: false, error: "Admin access required" });
+  }
+  next();
+}

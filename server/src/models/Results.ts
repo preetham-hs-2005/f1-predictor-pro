@@ -9,6 +9,7 @@ export interface RaceResult {
   p2: string;
   p3: string;
   pole: string;
+  bestConstructor?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +92,7 @@ export class Results {
       p2: result.p2,
       p3: result.p3,
       pole: result.pole,
+      bestConstructor: result.bestConstructor,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
     };

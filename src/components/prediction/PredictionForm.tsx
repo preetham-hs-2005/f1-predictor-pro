@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { type RaceWeekend } from "@/lib/data/raceCalendar";
-import { drivers } from "@/lib/data/drivers";
+import { useDrivers } from "@/hooks/useDrivers";
 import { submitPrediction, getUserPrediction } from "@/lib/api/predictions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -31,9 +31,18 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
   const [p2, setP2] = useState("");
   const [p3, setP3] = useState("");
   const [pole, setPole] = useState("");
+  const [constructor, setConstructor] = useState("");
   const [unexpected, setUnexpected] = useState("");
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
+
+  const { drivers, isLoading: loadingDrivers } = useDrivers();
+  const teamsWithColors = Array.from(new Set(drivers.map(d => d.team)))
+    .sort()
+    .map(team => {
+      const driver = drivers.find(d => d.team === team);
+      return { team, color: driver?.teamColor || "#FFFFFF" };
+    });
 
   const isSprint = type === "sprint";
   const pointMultiplier = isSprint ? 0.5 : 1;
@@ -50,6 +59,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         setP2(prediction.predictedP2);
         setP3(prediction.predictedP3);
         setPole(prediction.predictedPole);
+        setConstructor(prediction.predictedConstructor || "");
         setUnexpected(prediction.unexpectedStatement);
       } catch {
         // No existing prediction, form stays empty
@@ -62,7 +72,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
   }, [race.id, user]);
 
   const canSubmit =
-    p1 && p2 && p3 && pole && unexpected.length >= 10 && !locked && !loading;
+    p1 && p2 && p3 && pole && constructor && unexpected.length >= 10 && !locked && !loading;
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -86,6 +96,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         predictedP2: p2,
         predictedP3: p3,
         predictedPole: pole,
+        predictedConstructor: constructor,
         unexpectedStatement: unexpected,
       });
 
@@ -101,7 +112,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
     }
   };
 
-  if (initializing) {
+  if (initializing || loadingDrivers) {
     return (
       <div className="flex justify-center items-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -241,6 +252,31 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         </Select>
       </section>
 
+      {/* Constructor */}
+      <section className="glass rounded-xl p-6 mb-6 animate-slide-up">
+        <Label className="f1-heading text-sm text-muted-foreground mb-3 block">
+          Highest Scoring Constructor · {10 * pointMultiplier}pts
+        </Label>
+        <Select value={constructor} onValueChange={setConstructor} disabled={locked}>
+          <SelectTrigger className="bg-background/50">
+            <SelectValue placeholder="Select team" />
+          </SelectTrigger>
+          <SelectContent>
+            {teamsWithColors.map((t) => (
+              <SelectItem key={t.team} value={t.team}>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: t.color }}
+                  />
+                  {t.team}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </section>
+
       {/* Expect the Unexpected */}
       <section className="glass rounded-xl p-6 mb-8 animate-slide-up">
         <Label className="f1-heading text-sm text-muted-foreground mb-3 block">
@@ -265,6 +301,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
           {!p2 && <p className="text-f1-warning">• Select a driver for P2</p>}
           {!p3 && <p className="text-f1-warning">• Select a driver for P3</p>}
           {!pole && <p className="text-f1-warning">• Select pole position</p>}
+          {!constructor && <p className="text-f1-warning">• Select a constructor</p>}
           {unexpected.length < 10 && (
             <p className="text-f1-warning">
               • Unexpected prediction needs at least 10 characters (

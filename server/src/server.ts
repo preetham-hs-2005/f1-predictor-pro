@@ -19,6 +19,8 @@ import predictionsRoutes from "./routes/predictions.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
 import adminRoutes from "./routes/admin.js";
 import discussionsRoutes from "./routes/discussions.js";
+import driversRoutes from "./routes/drivers.js";
+import { Driver } from "./models/Driver.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -116,6 +118,7 @@ app.use("/api/predictions", predictionsRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/discussions", discussionsRoutes);
+app.use("/api/drivers", driversRoutes);
 
 // Health check
 app.get("/health", (req, res) => {
@@ -135,6 +138,9 @@ async function startServer() {
   try {
     // Connect to MongoDB
     await connectDB();
+
+    // Ensure drivers are seeded initially
+    await Driver.seedIfEmpty();
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);

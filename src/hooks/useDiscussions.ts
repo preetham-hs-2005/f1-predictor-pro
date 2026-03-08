@@ -11,6 +11,7 @@ import {
   likeMessage as apiLikeMessage,
   createPoll as apiCreatePoll,
   votePoll as apiVotePoll,
+  deletePoll as apiDeletePoll,
   getMessages,
 } from "@/lib/api/discussions";
 
@@ -57,6 +58,7 @@ interface UseDiscussionReturn {
   likeMessage: (messageId: string) => Promise<void>;
   createPoll: (question: string, description: string, type: string, options: string[]) => Promise<Poll | null>;
   votePoll: (pollId: string, selectedOptions: number[]) => Promise<void>;
+  deletePoll: (pollId: string) => Promise<boolean>;
 }
 
 export const useDiscussion = (): UseDiscussionReturn => {
@@ -204,6 +206,23 @@ export const useDiscussion = (): UseDiscussionReturn => {
     [discussion, polls, toast]
   );
 
+  const deletePoll = useCallback(
+    async (pollId: string): Promise<boolean> => {
+      if (!discussion) return false;
+      try {
+        const deleted = await apiDeletePoll(discussion._id, pollId);
+        setPolls(polls.filter((p) => p._id !== pollId));
+        toast({ title: "Success", description: "Poll deleted" });
+        return deleted;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to delete poll";
+        toast({ title: "Error", description: message, variant: "destructive" });
+        return false;
+      }
+    },
+    [discussion, polls, toast]
+  );
+
   return {
     discussion,
     messages,
@@ -216,5 +235,6 @@ export const useDiscussion = (): UseDiscussionReturn => {
     likeMessage,
     createPoll,
     votePoll,
+    deletePoll,
   };
 };

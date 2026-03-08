@@ -10,6 +10,7 @@ export interface PredictionDocument {
   predictedP2: string;
   predictedP3: string;
   predictedPole: string;
+  predictedConstructor?: string;
   unexpectedStatement: string;
   createdAt: Date;
   updatedAt: Date;
@@ -120,6 +121,7 @@ export class Prediction {
       predictedP2: prediction.predictedP2,
       predictedP3: prediction.predictedP3,
       predictedPole: prediction.predictedPole,
+      predictedConstructor: prediction.predictedConstructor,
       unexpectedStatement: prediction.unexpectedStatement,
       createdAt: prediction.createdAt,
       updatedAt: prediction.updatedAt,

@@ -8,7 +8,8 @@ import AdminResults from "@/components/admin/AdminResults";
 import AdminPredictions from "@/components/admin/AdminPredictions";
 import AdminUsersAdvanced from "@/components/admin/AdminUsersAdvanced";
 import AdminDataManagement from "@/components/admin/AdminDataManagement";
-import { Shield, ClipboardList, Users, Trophy, BarChart3, Settings, Database } from "lucide-react";
+import AdminDrivers from "@/components/admin/AdminDrivers";
+import { Shield, ClipboardList, Users, Trophy, BarChart3, Settings, Database, UsersRound } from "lucide-react";
 
 const Admin = () => {
   const { user, isAuthenticated } = useAuth();
@@ -53,6 +54,10 @@ const Admin = () => {
               <Users className="h-4 w-4" />
               <span className="hidden min-[640px]:inline">Users</span>
             </TabsTrigger>
+            <TabsTrigger value="drivers" className="gap-1 text-xs md:text-sm">
+              <UsersRound className="h-4 w-4" />
+              <span className="hidden min-[640px]:inline">Drivers</span>
+            </TabsTrigger>
             <TabsTrigger value="data" className="gap-1 text-xs md:text-sm">
               <Database className="h-4 w-4" />
               <span className="hidden min-[640px]:inline">Data</span>
@@ -74,6 +79,9 @@ const Admin = () => {
           </TabsContent>
           <TabsContent value="users">
             <AdminUsersAdvanced />
+          </TabsContent>
+          <TabsContent value="drivers">
+            <AdminDrivers />
           </TabsContent>
           <TabsContent value="data">
             <AdminDataManagement />

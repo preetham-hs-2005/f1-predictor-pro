@@ -23,15 +23,16 @@ export class Leaderboard {
   private static calculatePredictionScore(
     prediction: any,
     result: any | null
-  ): { points: number; correctWinner: boolean; exactPodium: boolean; unexpectedAward: boolean } {
+  ): { points: number; correctWinner: boolean; exactPodium: boolean; unexpectedAward: boolean, correctConstructor: boolean } {
     let points = 0;
     let correctWinner = false;
     let exactPodium = false;
     let unexpectedAward = false;
+    let correctConstructor = false;
 
     if (!result) {
       // No result yet, no points gained
-      return { points, correctWinner, exactPodium, unexpectedAward };
+      return { points, correctWinner, exactPodium, unexpectedAward, correctConstructor };
     }
 
     // Correct P1 prediction: 25 points
@@ -71,7 +72,13 @@ export class Leaderboard {
       unexpectedAward = true;
     }
 
-    return { points, correctWinner, exactPodium, unexpectedAward };
+    // Constructor prediction bonus: 10 points
+    if (prediction.predictedConstructor && result.bestConstructor && prediction.predictedConstructor === result.bestConstructor) {
+      points += 10;
+      correctConstructor = true;
+    }
+
+    return { points, correctWinner, exactPodium, unexpectedAward, correctConstructor };
   }
 
   /**

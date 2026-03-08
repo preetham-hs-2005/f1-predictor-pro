@@ -288,7 +288,7 @@ router.get("/results", async (req: Request, res: Response) => {
  */
 router.post("/results", async (req: Request, res: Response) => {
   try {
-    const { raceId, type, p1, p2, p3, pole } = req.body;
+    const { raceId, type, p1, p2, p3, pole, bestConstructor } = req.body;
 
     if (!raceId || !type || !p1 || !p2 || !p3 || !pole) {
       return res.status(400).json({ success: false, error: "Missing required fields" });
@@ -310,6 +310,7 @@ router.post("/results", async (req: Request, res: Response) => {
           p2,
           p3,
           pole,
+          bestConstructor,
           updatedAt: new Date(),
         },
         $setOnInsert: {
@@ -336,6 +337,7 @@ router.post("/results", async (req: Request, res: Response) => {
       let p3Points = 0;
       let polePoints = 0;
       let podiumBonusPoints = 0;
+      let constructorPoints = 0;
       let unexpectedPoints = 0; // Default to 0 - requires admin approval
 
       // Check each position
@@ -343,6 +345,11 @@ router.post("/results", async (req: Request, res: Response) => {
       if (prediction.predictedP2 === p2) p2Points = 18;
       if (prediction.predictedP3 === p3) p3Points = 15;
       if (prediction.predictedPole === pole) polePoints = 5;
+      
+      // Best Constructor logic (10 points)
+      if (prediction.predictedConstructor && bestConstructor && prediction.predictedConstructor === bestConstructor) {
+        constructorPoints = 10;
+      }
 
       // Podium bonus (all three correct)
       if (
@@ -353,7 +360,7 @@ router.post("/results", async (req: Request, res: Response) => {
         podiumBonusPoints = 10;
       }
 
-      const total = p1Points + p2Points + p3Points + polePoints + podiumBonusPoints + unexpectedPoints;
+      const total = p1Points + p2Points + p3Points + polePoints + podiumBonusPoints + unexpectedPoints + constructorPoints;
 
       console.log(`[SCORING] User ${prediction.userId}: P1=${p1Points}, P2=${p2Points}, P3=${p3Points}, Pole=${polePoints}, Podium=${podiumBonusPoints}, Total=${total}`);
 
@@ -371,6 +378,7 @@ router.post("/results", async (req: Request, res: Response) => {
             p3Points,
             polePoints,
             podiumBonusPoints,
+            constructorPoints,
             unexpectedPoints,
             total,
             updatedAt: new Date(),
@@ -653,6 +661,7 @@ router.get("/scores", async (req: Request, res: Response) => {
           p3Points: score.p3Points || 0,
           polePoints: score.polePoints || 0,
           podiumBonusPoints: score.podiumBonusPoints || 0,
+          constructorPoints: score.constructorPoints || 0,
           unexpectedPoints: score.unexpectedPoints || 0,
           total: score.total || 0,
           createdAt: score.createdAt,
@@ -966,6 +975,158 @@ router.post("/rescore-race", async (req: Request, res: Response) => {
     const message = error instanceof Error ? error.message : "Failed to rescore race";
     console.error("Rescore race error:", message);
     res.status(500).json({ success: false, error: message });
+  }
+});
+
+/**
+ * GET /api/admin/data/stats
+ * Get actual database statistics
+ */
+router.get("/data/stats", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const stats = await db.stats();
+
+    const collections = [
+      "users",
+      "predictions",
+      "results",
+      "scores",
+      "drivers",
+      "discussions",
+      "polls",
+      "pollVotes",
+      "messages",
+    ];
+
+    const counts: Record<string, number> = {};
+    for (const col of collections) {
+      counts[col] = await db.collection(col).countDocuments();
+    }
+
+    res.json({
+      success: true,
+      data: {
+        storageSizeKB: (stats.storageSize / 1024).toFixed(2),
+        documentCounts: counts,
+      },
+    });
+  } catch (error) {
+    console.error("Admin data stats error:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch database statistics" });
+  }
+});
+
+/**
+ * GET /api/admin/data/export
+ * Export all collections
+ */
+router.get("/data/export", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const exportData: Record<string, any[]> = {};
+    const collections = [
+      "users",
+      "predictions",
+      "results",
+      "scores",
+      "drivers",
+      "discussions",
+      "polls",
+      "pollVotes",
+      "messages",
+    ];
+
+    for (const col of collections) {
+      exportData[col] = await db.collection(col).find({}).toArray();
+    }
+
+    res.json({
+      success: true,
+      exportDate: new Date().toISOString(),
+      version: "2.0",
+      data: exportData,
+    });
+  } catch (error) {
+    console.error("Admin data export error:", error);
+    res.status(500).json({ success: false, error: "Failed to export database backup" });
+  }
+});
+
+/**
+ * POST /api/admin/data/import
+ * Import collection backup
+ */
+router.post("/data/import", async (req: Request, res: Response) => {
+  try {
+    const backup = req.body;
+    
+    if (!backup || !backup.data || !backup.exportDate) {
+      return res.status(400).json({ success: false, error: "Invalid backup format" });
+    }
+
+    const db = getDB();
+    const collections = Object.keys(backup.data);
+    let importedCollections = 0;
+
+    for (const col of collections) {
+      const docs = backup.data[col];
+      if (Array.isArray(docs) && docs.length > 0) {
+        // Clear collection
+        await db.collection(col).deleteMany({});
+        
+        // Re-type _id to ObjectId if necessary before insert
+        const preparedDocs = docs.map((doc: any) => {
+          if (doc._id && typeof doc._id === "string") {
+            try { doc._id = new ObjectId(doc._id); } catch {}
+          }
+          return doc;
+        });
+
+        await db.collection(col).insertMany(preparedDocs);
+        importedCollections++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully restored ${importedCollections} collections`,
+    });
+  } catch (error) {
+    console.error("Admin data import error:", error);
+    res.status(500).json({ success: false, error: "Failed to import database backup" });
+  }
+});
+
+/**
+ * DELETE /api/admin/data/clear
+ * Dangerously clear user data
+ */
+router.delete("/data/clear", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const collectionsToClear = [
+      "users",
+      "predictions",
+      "results",
+      "scores",
+      "discussions",
+      "polls",
+      "pollVotes",
+      "messages",
+    ]; // Do not clear active drivers!
+
+    for (const col of collectionsToClear) {
+      await db.collection(col).deleteMany({});
+    }
+
+    res.json({
+      success: true,
+      message: "Successfully wiped all user data",
+    });
+  } catch (error) {
+    console.error("Admin data clear error:", error);
+    res.status(500).json({ success: false, error: "Failed to clear database" });
   }
 });
 
