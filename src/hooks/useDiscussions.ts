@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useToast } from "./use-toast";
 import {
   Discussion,
@@ -11,6 +11,7 @@ import {
   likeMessage as apiLikeMessage,
   createPoll as apiCreatePoll,
   votePoll as apiVotePoll,
+  getMessages,
 } from "@/lib/api/discussions";
 
 interface UseDiscussionsReturn {
@@ -65,10 +66,13 @@ export const useDiscussion = (): UseDiscussionReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const discussionIdRef = useRef<string | null>(null);
 
   const fetchDiscussion = useCallback(async (id: string) => {
     setLoading(true);
     setError(null);
+    discussionIdRef.current = id;
     try {
       const data = await getDiscussion(id);
       setDiscussion(data.discussion);
@@ -82,6 +86,29 @@ export const useDiscussion = (): UseDiscussionReturn => {
       setLoading(false);
     }
   }, [toast]);
+
+  // Auto-refresh messages every 3 seconds
+  useEffect(() => {
+    if (!discussion) return;
+
+    const refreshMessages = async () => {
+      try {
+        const freshMessages = await getMessages(discussion._id, 1, 100);
+        setMessages(freshMessages);
+      } catch (err) {
+        console.error("Error refreshing messages:", err);
+      }
+    };
+
+    // Set up polling interval
+    pollingIntervalRef.current = setInterval(refreshMessages, 3000);
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [discussion]);
 
   const addMessage = useCallback(
     async (content: string): Promise<Message | null> => {
