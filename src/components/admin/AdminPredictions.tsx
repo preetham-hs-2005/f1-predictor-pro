@@ -1,13 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { raceCalendar } from "@/lib/data/raceCalendar";
 import { getDriverById } from "@/lib/data/drivers";
-import {
-  getRacePredictions,
-  getStoredScores,
-  awardUnexpectedPoints,
-  removeUnexpectedPoints,
-  getResult,
-} from "@/lib/data/results";
+import { getAdminPredictions, getAdminScores, type AdminPrediction, type ScoreEntry, awardUnexpectedPoints, revokeUnexpectedPoints } from "@/lib/api/admin";
 import {
   Select,
   SelectContent,
@@ -23,40 +17,122 @@ import { Zap, Award, X } from "lucide-react";
 const AdminPredictions = () => {
   const [selectedRace, setSelectedRace] = useState("");
   const [predType, setPredType] = useState<"race" | "sprint">("race");
-  const [, setRefresh] = useState(0);
+  const [allPredictions, setAllPredictions] = useState<AdminPrediction[]>([]);
+  const [allScores, setAllScores] = useState<ScoreEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    const [predictions, scores] = await Promise.all([
+      getAdminPredictions(),
+      getAdminScores(),
+    ]);
+    setAllPredictions(predictions);
+    setAllScores(scores);
+    setLoading(false);
+  };
 
   const race = raceCalendar.find((r) => r.id === selectedRace);
-  const predictions = selectedRace ? getRacePredictions(selectedRace, predType) : [];
-  const result = selectedRace ? getResult(selectedRace, predType) : null;
-  const scores = getStoredScores();
 
-  // Get stored users for name lookup
-  const getUsername = (userId: string) => {
-    try {
-      const users = JSON.parse(localStorage.getItem("f1_users") || "[]");
-      return users.find((u: any) => u.id === userId)?.name || "Unknown";
-    } catch {
-      return "Unknown";
-    }
-  };
+  const predictions = useMemo(() => {
+    if (!selectedRace) return [];
+    return allPredictions.filter((p) => p.raceId === selectedRace && p.type === predType);
+  }, [allPredictions, selectedRace, predType]);
+
+  const scores = useMemo(() => {
+    if (!selectedRace) return [];
+    return allScores.filter((s) => s.raceId === selectedRace && s.type === predType);
+  }, [allScores, selectedRace, predType]);
 
   const getDriverName = (id: string) => getDriverById(id)?.name || id;
 
   const getUserScore = (userId: string) =>
-    scores.find(
-      (s) => s.userId === userId && s.raceId === selectedRace && s.type === predType
-    );
+    scores.find((s) => s.userId === userId);
 
-  const handleAwardUnexpected = (userId: string) => {
-    awardUnexpectedPoints(userId, selectedRace, predType);
-    toast.success("Unexpected points awarded!");
-    setRefresh((r) => r + 1);
+  const handleAwardUnexpected = async (userId: string) => {
+    if (!selectedRace) return;
+    try {
+      // Optimistically update the score in the UI
+      const existingScoreIndex = allScores.findIndex(s => 
+        s.userId === userId && s.raceId === selectedRace && s.type === predType
+      );
+
+      let updatedScores;
+      if (existingScoreIndex >= 0) {
+        // Score exists, update it
+        updatedScores = allScores.map((s, idx) => 
+          idx === existingScoreIndex
+            ? { ...s, unexpectedPoints: 15, total: s.total - (s.unexpectedPoints || 0) + 15 }
+            : s
+        );
+      } else {
+        // Score doesn't exist, create optimistic entry
+        updatedScores = [...allScores, {
+          userId,
+          raceId: selectedRace,
+          type: predType,
+          p1Points: 0,
+          p2Points: 0,
+          p3Points: 0,
+          polePoints: 0,
+          podiumBonusPoints: 0,
+          unexpectedPoints: 15,
+          total: 15,
+        }];
+      }
+      setAllScores(updatedScores);
+      
+      const success = await awardUnexpectedPoints(userId, selectedRace, predType);
+      if (!success) {
+        // Revert optimistic update on failure
+        toast.error("Failed to award points - reverting");
+        await loadData();
+      } else {
+        toast.success("Unexpected statement points awarded!");
+      }
+    } catch (error) {
+      toast.error("Error awarding points");
+      console.error("Award error:", error);
+      // Revert on error
+      await loadData();
+    }
   };
 
-  const handleRemoveUnexpected = (userId: string) => {
-    removeUnexpectedPoints(userId, selectedRace, predType);
-    toast.success("Unexpected points removed");
-    setRefresh((r) => r + 1);
+  const handleRemoveUnexpected = async (userId: string) => {
+    if (!selectedRace) return;
+    try {
+      // Optimistically update the score in the UI
+      const existingScoreIndex = allScores.findIndex(s => 
+        s.userId === userId && s.raceId === selectedRace && s.type === predType
+      );
+
+      if (existingScoreIndex >= 0) {
+        const updatedScores = allScores.map((s, idx) => 
+          idx === existingScoreIndex
+            ? { ...s, unexpectedPoints: 0, total: s.total - (s.unexpectedPoints || 0) }
+            : s
+        );
+        setAllScores(updatedScores);
+      }
+      
+      const success = await revokeUnexpectedPoints(userId, selectedRace, predType);
+      if (!success) {
+        // Revert optimistic update on failure
+        toast.error("Failed to revoke points - reverting");
+        await loadData();
+      } else {
+        toast.success("Unexpected statement points revoked!");
+      }
+    } catch (error) {
+      toast.error("Error revoking points");
+      console.error("Revoke error:", error);
+      // Revert on error
+      await loadData();
+    }
   };
 
   return (
@@ -64,20 +140,26 @@ const AdminPredictions = () => {
       <section className="glass rounded-xl p-6">
         <h2 className="f1-heading text-sm text-muted-foreground mb-4">View Predictions</h2>
 
-        <div className="flex gap-3 mb-4">
-          <Select value={selectedRace} onValueChange={(v) => { setSelectedRace(v); setPredType("race"); }}>
-            <SelectTrigger className="bg-background/50 flex-1">
-              <SelectValue placeholder="Select a race" />
-            </SelectTrigger>
-            <SelectContent>
-              {raceCalendar.map((r) => (
-                <SelectItem key={r.id} value={r.id}>
-                  {r.countryFlag} R{r.round} · {r.raceName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading MongoDB predictions...</div>
+        ) : (
+          <>
+            <div className="flex gap-3 mb-4">
+              <Select value={selectedRace} onValueChange={(v) => { setSelectedRace(v); setPredType("race"); }}>
+                <SelectTrigger className="bg-background/50 flex-1">
+                  <SelectValue placeholder="Select a race" />
+                </SelectTrigger>
+                <SelectContent>
+                  {raceCalendar.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.countryFlag} R{r.round} · {r.raceName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+
 
         {race?.sprintWeekend && (
           <div className="flex gap-2 mb-4">
@@ -105,7 +187,7 @@ const AdminPredictions = () => {
           </div>
         )}
 
-        {!result && selectedRace && (
+        {scores.length === 0 && selectedRace && (
           <p className="text-sm text-muted-foreground text-center py-4">
             Results not entered yet — enter results first to see scores.
           </p>
@@ -127,7 +209,7 @@ const AdminPredictions = () => {
                   className="bg-background/30 rounded-lg p-4 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm">{getUsername(pred.userId)}</span>
+                    <span className="font-semibold text-sm">{pred.userName}</span>
                     {score && (
                       <Badge className="bg-primary/20 text-primary">
                         {score.total} pts
@@ -179,10 +261,10 @@ const AdminPredictions = () => {
                     </div>
                   )}
 
-                  {/* Unexpected award controls */}
-                  {result && score && (
+                  {/* Unexpected award controls - show for all predictions if race has results */}
+                  {selectedRace && scores.length > 0 && (
                     <div className="flex gap-2">
-                      {score.unexpectedPoints === 0 ? (
+                      {!score || score.unexpectedPoints === 0 ? (
                         <Button
                           size="sm"
                           variant="outline"
@@ -209,6 +291,8 @@ const AdminPredictions = () => {
               );
             })}
           </div>
+        )}
+          </>
         )}
       </section>
     </div>

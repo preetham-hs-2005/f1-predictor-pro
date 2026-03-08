@@ -241,3 +241,26 @@ export const toggleUserRole = (userId: string) => {
     return null;
   }
 };
+
+// Delete user and their related data
+export const deleteUser = (userId: string) => {
+  try {
+    const users = JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
+    const filteredUsers = users.filter((u: any) => u.id !== userId);
+    localStorage.setItem(USERS_KEY, JSON.stringify(filteredUsers));
+
+    // Delete their predictions
+    const predictions = JSON.parse(localStorage.getItem("f1_predictions") || "[]");
+    const filteredPredictions = predictions.filter((p: any) => p.userId !== userId);
+    localStorage.setItem("f1_predictions", JSON.stringify(filteredPredictions));
+
+    // Delete their scores
+    const scores = JSON.parse(localStorage.getItem(SCORES_KEY) || "[]");
+    const filteredScores = scores.filter((s: any) => s.userId !== userId);
+    localStorage.setItem(SCORES_KEY, JSON.stringify(filteredScores));
+
+    return true;
+  } catch {
+    return false;
+  }
+};

@@ -80,38 +80,39 @@ export class Leaderboard {
   static async getLeaderboard(limit: number = 50): Promise<LeaderboardEntry[]> {
     const db = getDB();
     const usersCollection = db.collection("users");
-    const predictionsCollection = db.collection("predictions");
-    const resultsCollection = db.collection("results");
+    const scoresCollection = db.collection("scores");
 
-    // Get all users
-    const users = await usersCollection.find({}).toArray();
+    // Get all visible users (not hidden)
+    const users = await usersCollection.find({ hidden: { $ne: true } }).toArray();
+    console.log(`[LEADERBOARD] Found ${users.length} visible users`);
 
-    // Calculate scores for each user
+    // Get scores from persisted scores collection
     const leaderboardData = await Promise.all(
       users.map(async (user: any) => {
         const userId = user._id.toString();
-        const predictions = await predictionsCollection
+        console.log(`[LEADERBOARD] DEBUG: Querying scores with userId type: ${typeof userId}, value: "${userId}"`);
+        
+        // Get all scores for this user from the persisted scores collection
+        const userScores = await scoresCollection
           .find({ userId })
           .toArray();
+
+        console.log(`[LEADERBOARD] User ${user.name} (${userId}): found ${userScores.length} score entries`);
 
         let totalPoints = 0;
         let correctWinners = 0;
         let exactPodiums = 0;
         let unexpectedAwards = 0;
 
-        // Calculate points for all predictions
-        for (const prediction of predictions) {
-          const result = await resultsCollection.findOne({
-            raceWeekendId: prediction.raceWeekendId,
-            type: prediction.type,
-          });
-
-          const score = this.calculatePredictionScore(prediction, result);
-          totalPoints += score.points;
-          if (score.correctWinner) correctWinners++;
-          if (score.exactPodium) exactPodiums++;
-          if (score.unexpectedAward) unexpectedAwards++;
+        // Sum up all the persisted scores
+        for (const score of userScores) {
+          totalPoints += score.total || 0;
+          if (score.p1Points && score.p1Points > 0) correctWinners++;
+          if (score.podiumBonusPoints && score.podiumBonusPoints > 0) exactPodiums++;
+          if (score.unexpectedPoints && score.unexpectedPoints > 0) unexpectedAwards++;
         }
+
+        console.log(`[LEADERBOARD] User ${user.name}: totalPoints=${totalPoints}`);
 
         return {
           userId: userId,
@@ -121,7 +122,7 @@ export class Leaderboard {
           correctWinners,
           exactPodiums,
           unexpectedAwards,
-          predictionsSubmitted: predictions.length,
+          predictionsSubmitted: userScores.length,
         };
       })
     );

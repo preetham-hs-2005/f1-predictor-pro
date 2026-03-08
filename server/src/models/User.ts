@@ -9,6 +9,7 @@ export interface UserDocument {
   password: string;
   role: "user" | "admin";
   totalPoints: number;
+  hidden?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +34,7 @@ export class User {
       password: hashedPassword,
       role: "user",
       totalPoints: 0,
+      hidden: false,
       createdAt: now,
       updatedAt: now,
     });

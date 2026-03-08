@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { raceCalendar } from "@/lib/data/raceCalendar";
 import { drivers } from "@/lib/data/drivers";
-import { getResult, saveResult, scoreRace } from "@/lib/data/results";
+import { getAdminResults, saveAdminResult, getAdminScores } from "@/lib/api/admin";
 import {
   Select,
   SelectContent,
@@ -11,23 +11,44 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle, Zap } from "lucide-react";
+import { CheckCircle, Zap, TrendingUp } from "lucide-react";
 
 const AdminResults = () => {
   const [selectedRace, setSelectedRace] = useState("");
   const [resultType, setResultType] = useState<"race" | "sprint">("race");
+  const [allResults, setAllResults] = useState<any[]>([]);
+  const [allScores, setAllScores] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const race = raceCalendar.find((r) => r.id === selectedRace);
-  const existingResult = selectedRace ? getResult(selectedRace, resultType) : null;
+  const existingResult = selectedRace ? allResults.find((r) => r.raceId === selectedRace && r.type === resultType) : null;
 
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
   const [p3, setP3] = useState("");
   const [pole, setPole] = useState("");
 
+  // Load results and scores from MongoDB
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [results, scores] = await Promise.all([getAdminResults(), getAdminScores()]);
+        setAllResults(results);
+        setAllScores(scores);
+      } catch (error) {
+        console.error("Failed to load results:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
   const loadExisting = (raceId: string, type: "race" | "sprint") => {
-    const result = getResult(raceId, type);
+    const result = allResults.find((r) => r.raceId === raceId && r.type === type);
     if (result) {
       setP1(result.p1);
       setP2(result.p2);
@@ -52,7 +73,7 @@ const AdminResults = () => {
     loadExisting(selectedRace, type);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!p1 || !p2 || !p3 || !pole) {
       toast.error("All positions must be filled");
       return;
@@ -64,21 +85,47 @@ const AdminResults = () => {
     }
 
     const result = { raceId: selectedRace, type: resultType, p1, p2, p3, pole };
-    saveResult(result);
-    scoreRace(result);
-    toast.success(`${resultType === "sprint" ? "Sprint" : "Race"} results saved & predictions scored!`);
+    try {
+      await saveAdminResult(result);
+      // Refresh results
+      const [results, scores] = await Promise.all([getAdminResults(), getAdminScores()]);
+      setAllResults(results);
+      setAllScores(scores);
+      toast.success(`${resultType === "sprint" ? "Sprint" : "Race"} results saved & predictions scored!`);
+    } catch (error) {
+      toast.error("Failed to save results");
+      console.error(error);
+    }
   };
+
+
+
 
   const completedResults = raceCalendar
     .map((r) => ({
       race: r,
-      hasRace: !!getResult(r.id, "race"),
-      hasSprint: r.sprintWeekend ? !!getResult(r.id, "sprint") : null,
+      hasRace: !!allResults.find((res) => res.raceId === r.id && res.type === "race"),
+      hasSprint: r.sprintWeekend ? !!allResults.find((res) => res.raceId === r.id && res.type === "sprint") : null,
     }))
     .filter((r) => r.hasRace || r.hasSprint);
 
+  // Calculate summary stats
+  const raceScores = selectedRace ? allScores.filter((s) => s.raceId === selectedRace && s.type === resultType) : [];
+  const summaryStats = {
+    participantsScored: raceScores.length,
+    avgScore: raceScores.length > 0 ? Math.round(raceScores.reduce((sum, s) => sum + (s.total || 0), 0) / raceScores.length) : 0,
+    highestScore: raceScores.length > 0 ? Math.max(...raceScores.map((s) => s.total || 0)) : 0,
+    totalScoreAwarded: raceScores.reduce((sum, s) => sum + (s.total || 0), 0),
+  };
+
   return (
     <div className="space-y-6">
+      {loading ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading race results...</p>
+        </div>
+      ) : (
+        <>
       {/* Race selector */}
       <section className="glass rounded-xl p-6">
         <h2 className="f1-heading text-sm text-muted-foreground mb-4">Enter Race Results</h2>
@@ -165,31 +212,75 @@ const AdminResults = () => {
         )}
       </section>
 
+      {/* Race stats summary */}
+      {selectedRace && existingResult && (
+        <section className="glass rounded-xl p-6">
+          <h2 className="f1-heading text-sm text-muted-foreground mb-4">Scoring Summary</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="glass border-0 bg-background/30">
+              <CardHeader className="pb-2">
+                <p className="text-xs text-muted-foreground">Participants Scored</p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold f1-heading">{summaryStats.participantsScored}</p>
+              </CardContent>
+            </Card>
+            <Card className="glass border-0 bg-background/30">
+              <CardHeader className="pb-2">
+                <p className="text-xs text-muted-foreground">Average Score</p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold f1-heading">{summaryStats.avgScore}</p>
+              </CardContent>
+            </Card>
+            <Card className="glass border-0 bg-background/30">
+              <CardHeader className="pb-2">
+                <p className="text-xs text-muted-foreground">Highest Score</p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold f1-heading text-f1-success">{summaryStats.highestScore}</p>
+              </CardContent>
+            </Card>
+            <Card className="glass border-0 bg-background/30">
+              <CardHeader className="pb-2">
+                <p className="text-xs text-muted-foreground">Total Awarded</p>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold f1-heading text-f1-gold">{summaryStats.totalScoreAwarded}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
+
       {/* Completed results summary */}
       {completedResults.length > 0 && (
         <section className="glass rounded-xl p-6">
-          <h2 className="f1-heading text-sm text-muted-foreground mb-4">Completed Races</h2>
+          <h2 className="f1-heading text-sm text-muted-foreground mb-4">Completed Races ({completedResults.length})</h2>
           <div className="space-y-2">
             {completedResults.map(({ race: r, hasRace, hasSprint }) => (
               <div
                 key={r.id}
-                className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/30"
+                className="flex items-center justify-between py-3 px-4 rounded-lg bg-background/30 hover:bg-background/50 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <span>{r.countryFlag}</span>
-                  <span className="text-sm font-semibold">{r.raceName}</span>
+                  <span className="text-lg">{r.countryFlag}</span>
+                  <div>
+                    <span className="text-sm font-semibold">{r.raceName}</span>
+                    <p className="text-xs text-muted-foreground">Round {r.round}</p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   {hasRace && (
                     <Badge variant="outline" className="text-f1-success border-f1-success/50 gap-1">
                       <CheckCircle className="h-3 w-3" />
-                      Race
+                      <span className="hidden sm:inline">Race</span>
                     </Badge>
                   )}
                   {hasSprint && (
                     <Badge variant="outline" className="text-f1-warning border-f1-warning/50 gap-1">
                       <Zap className="h-3 w-3" />
-                      Sprint
+                      <span className="hidden sm:inline">Sprint</span>
                     </Badge>
                   )}
                 </div>
@@ -197,6 +288,8 @@ const AdminResults = () => {
             ))}
           </div>
         </section>
+      )}
+        </>
       )}
     </div>
   );
