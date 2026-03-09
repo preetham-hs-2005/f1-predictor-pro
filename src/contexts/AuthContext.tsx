@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api/client";
 export interface User {
   id: string;
   name: string;
+  username?: string;
   email: string;
   role: "user" | "admin";
   totalPoints: number;
@@ -20,7 +21,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>;
+  setUsername: (username: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -66,10 +68,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string, username: string) => {
     try {
       setIsLoading(true);
-      const userData = await authApi.registerUser(name, email, password);
+      const userData = await authApi.registerUser(name, email, password, username);
       
       setUser(userData);
       // Note: apiClient.setAuthToken is called in authApi.registerUser
@@ -94,8 +96,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const setUsername = async (username: string) => {
+    try {
+      setIsLoading(true);
+      const userData = await authApi.setUsername(username);
+      setUser(userData);
+      
+      // Update session storage immediately to avoid refresh loss
+      const session = localStorage.getItem(SESSION_KEY);
+      if (session) {
+        const sessionData: SessionData = JSON.parse(session);
+        sessionData.user = userData;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+      }
+      
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to set username";
+      return { success: false, error: message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, setUsername }}>
       {children}
     </AuthContext.Provider>
   );

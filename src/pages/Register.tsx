@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 const Register = () => {
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,15 @@ const Register = () => {
       toast.error("Name must be 2-50 characters");
       return;
     }
+    if (username.length < 3 || username.length > 20) {
+      toast.error("Username must be 3-20 characters");
+      return;
+    }
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(username)) {
+      toast.error("Username can only contain letters, numbers, underscores, and hyphens");
+      return;
+    }
     if (password.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
@@ -29,7 +39,7 @@ const Register = () => {
 
     setLoading(true);
     try {
-      const result = await register(name, email, password);
+      const result = await register(name, email, password, username);
       if (result.success) {
         toast.success("Welcome to the grid!");
         navigate("/dashboard");
@@ -69,6 +79,17 @@ const Register = () => {
               placeholder="Max Verstappen"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
+              className="bg-background/50"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              placeholder="flying_dutchman_33"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="bg-background/50"
             />

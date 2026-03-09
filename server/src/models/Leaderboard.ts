@@ -8,6 +8,7 @@ export interface LeaderboardEntry {
   rank: number;
   userId: string;
   name: string;
+  username?: string;
   email: string;
   totalPoints: number;
   correctWinners: number;
@@ -123,7 +124,8 @@ export class Leaderboard {
 
         return {
           userId: userId,
-          name: user.name || "Unknown",
+          name: user.username || user.name || "Unknown",
+          username: user.username,
           email: user.email || "unknown@example.com",
           totalPoints,
           correctWinners,
@@ -163,7 +165,8 @@ export class Leaderboard {
       return {
         rank: leaderboard.length + 1,
         userId: userId,
-        name: user.name || "Unknown",
+        name: user.username || user.name || "Unknown",
+        username: user.username,
         email: user.email || "unknown@example.com",
         totalPoints: 0,
         correctWinners: 0,

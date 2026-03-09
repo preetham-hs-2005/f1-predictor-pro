@@ -7,6 +7,7 @@ import { apiClient, ApiResponse } from "./client";
 export interface AuthUser {
   id: string;
   name: string;
+  username?: string;
   email: string;
   role: "user" | "admin";
   totalPoints: number;
@@ -19,6 +20,7 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   name: string;
+  username: string;
   email: string;
   password: string;
 }
@@ -64,12 +66,14 @@ export async function loginUser(
 export async function registerUser(
   name: string,
   email: string,
-  password: string
+  password: string,
+  username: string
 ): Promise<AuthUser> {
   const response = await apiClient.post<AuthResponse>("/api/auth/register", {
     name,
     email,
     password,
+    username,
   });
 
   if (!response.success || !response.user) {
@@ -108,4 +112,24 @@ export async function logoutUser(): Promise<void> {
   } finally {
     apiClient.clearAuthToken();
   }
+}
+
+/**
+ * Set user's username
+ */
+export async function setUsername(username: string): Promise<AuthUser> {
+  const response = await apiClient.put<AuthResponse>("/api/auth/username", {
+    username,
+  });
+
+  if (!response.success || !response.user) {
+    throw new Error(response.error || "Failed to set username");
+  }
+
+  // Store token if provided
+  if (response.token) {
+    apiClient.setAuthToken(response.token, response.user);
+  }
+
+  return response.user;
 }

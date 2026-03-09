@@ -5,6 +5,7 @@ import { hashPassword, comparePassword } from "../utils/password.js";
 export interface UserDocument {
   _id?: ObjectId;
   name: string;
+  username?: string;
   email: string;
   password: string;
   role: "user" | "admin";
@@ -15,14 +16,15 @@ export interface UserDocument {
 }
 
 export class User {
-  static async create(name: string, email: string, password: string): Promise<UserDocument> {
+  static async create(name: string, email: string, password: string, username: string): Promise<UserDocument> {
     const db = getDB();
     const collection = db.collection<UserDocument>("users");
 
     // Check if user already exists
-    const existing = await collection.findOne({ email });
+    const existing = await collection.findOne({ $or: [{ email }, { username }] });
     if (existing) {
-      throw new Error("User with this email already exists");
+      if (existing.email === email) throw new Error("User with this email already exists");
+      if (existing.username === username) throw new Error("Username is already taken");
     }
 
     const hashedPassword = await hashPassword(password);
@@ -30,6 +32,7 @@ export class User {
 
     const result = await collection.insertOne({
       name,
+      username,
       email,
       password: hashedPassword,
       role: "user",
@@ -64,6 +67,33 @@ export class User {
     return collection.findOne({ _id: id });
   }
 
+  static async updateUsername(id: string | ObjectId, username: string): Promise<UserDocument | null> {
+    const db = getDB();
+    const collection = db.collection<UserDocument>("users");
+    
+    // Check if username already exists
+    const existing = await collection.findOne({ username });
+    if (existing) {
+      throw new Error("Username is already taken");
+    }
+    
+    if (typeof id === "string") {
+      id = new ObjectId(id);
+    }
+
+    const result = await collection.findOneAndUpdate(
+      { _id: id },
+      { $set: { username, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+    
+    if (!result) {
+      throw new Error("User not found");
+    }
+    
+    return result;
+  }
+
   static async verifyPassword(user: UserDocument, password: string): Promise<boolean> {
     return comparePassword(password, user.password);
   }
@@ -72,6 +102,7 @@ export class User {
     return {
       id: user._id?.toString(),
       name: user.name,
+      username: user.username,
       email: user.email,
       role: user.role,
       totalPoints: user.totalPoints,

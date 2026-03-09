@@ -4,11 +4,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SetUsernameModal } from "@/components/auth/SetUsernameModal";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Leaderboard from "./pages/Leaderboard";
+import Results from "./pages/Results";
 import Predict from "./pages/Predict";
 import PredictionHistory from "./pages/PredictionHistory";
 import Discussions from "./pages/Discussions";
@@ -23,6 +25,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <SetUsernameModal />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -30,6 +33,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/results" element={<Results />} />
             <Route path="/predictions" element={<PredictionHistory />} />
             <Route path="/predict/:raceId/:type?" element={<Predict />} />
             <Route path="/discussions" element={<Discussions />} />

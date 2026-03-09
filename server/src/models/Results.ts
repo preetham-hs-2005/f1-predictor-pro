@@ -3,7 +3,8 @@ import { getDB } from "../utils/db.js";
 
 export interface RaceResult {
   _id?: ObjectId;
-  raceWeekendId: string;
+  raceId?: string;
+  raceWeekendId?: string;
   type: "sprint" | "race";
   p1: string;
   p2: string;
@@ -20,17 +21,19 @@ export class Results {
     const collection = db.collection<RaceResult>("results");
 
     const now = new Date();
+    const raceId = result.raceId || result.raceWeekendId;
     const existing = await collection.findOne({
-      raceWeekendId: result.raceWeekendId,
+      $or: [{ raceWeekendId: raceId }, { raceId: raceId }],
       type: result.type,
     });
 
     if (existing) {
       const updated = await collection.findOneAndUpdate(
-        { raceWeekendId: result.raceWeekendId, type: result.type },
+        { $or: [{ raceWeekendId: raceId }, { raceId: raceId }], type: result.type },
         {
           $set: {
             ...result,
+            raceId: raceId,
             updatedAt: now,
           },
         },
@@ -64,7 +67,7 @@ export class Results {
     const collection = db.collection<RaceResult>("results");
 
     return collection.findOne({
-      raceWeekendId,
+      $or: [{ raceWeekendId }, { raceId: raceWeekendId }],
       type,
     });
   }
@@ -73,7 +76,7 @@ export class Results {
     const db = getDB();
     const collection = db.collection<RaceResult>("results");
 
-    return collection.find({ raceWeekendId }).toArray();
+    return collection.find({ $or: [{ raceWeekendId }, { raceId: raceWeekendId }] }).toArray();
   }
 
   static async getAll(): Promise<RaceResult[]> {
@@ -83,16 +86,17 @@ export class Results {
     return collection.find({}).sort({ createdAt: -1 }).toArray();
   }
 
-  static formatResponse(result: RaceResult) {
+  static formatResponse(result: any) {
     return {
       id: result._id?.toString(),
-      raceWeekendId: result.raceWeekendId,
+      raceId: result.raceId || result.raceWeekendId,
       type: result.type,
       p1: result.p1,
       p2: result.p2,
       p3: result.p3,
       pole: result.pole,
       bestConstructor: result.bestConstructor,
+      isOfficial: true,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
     };

@@ -4,11 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import { TrendingUp, TrendingDown, Minus, Loader } from "lucide-react";
 import { getLeaderboard } from "@/lib/api/leaderboard";
+import { UserPredictionsDialog } from "@/components/leaderboard/UserPredictionsDialog";
 
 interface LeaderboardEntry {
   rank: number;
   userId: string;
   name: string;
+  username?: string;
   email: string;
   totalPoints: number;
   correctWinners: number;
@@ -35,6 +37,7 @@ const Leaderboard = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [selectedUser, setSelectedUser] = useState<LeaderboardEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,8 +116,12 @@ const Leaderboard = () => {
                 <span className="text-sm font-bold">
                   {getMedalEmoji(entry.rank) || entry.rank}
                 </span>
-                <div className="text-sm font-semibold truncate">
-                  <div className="truncate">{entry.name}</div>
+                <div 
+                  className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors flex flex-col underline-offset-4 hover:underline"
+                  onClick={() => setSelectedUser(entry)}
+                  title="Click to view predictions"
+                >
+                  <div className="truncate">{entry.username || entry.name}</div>
                 </div>
                 <span className="text-right text-sm font-bold tabular-nums">
                   {entry.totalPoints}
@@ -136,6 +143,8 @@ const Leaderboard = () => {
         <p className="text-center text-xs text-muted-foreground mt-6">
           Points are calculated from actual race results · Updated every 30 seconds
         </p>
+
+        <UserPredictionsDialog user={selectedUser} onClose={() => setSelectedUser(null)} />
       </main>
     </div>
   );

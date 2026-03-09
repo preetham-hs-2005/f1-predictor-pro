@@ -97,6 +97,29 @@ router.get("/user", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/predictions/public/:userId
+router.get("/public/:userId", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const lockedIdsStr = req.query.lockedIds as string;
+    const lockedIds = lockedIdsStr ? lockedIdsStr.split(",") : [];
+
+    const predictions = await Prediction.findByUser(userId);
+    
+    // Only return predictions for races that the frontend reports as locked
+    const filteredPredictions = predictions.filter(p => lockedIds.includes(p.raceWeekendId));
+
+    res.json({
+      success: true,
+      data: filteredPredictions.map(p => Prediction.formatResponse(p)),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch public predictions";
+    console.error("Fetch public predictions error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
 // GET /api/predictions/:raceWeekendId
 router.get("/:raceWeekendId", authMiddleware, async (req: Request, res: Response) => {
   try {

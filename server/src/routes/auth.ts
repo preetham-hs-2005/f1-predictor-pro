@@ -8,16 +8,16 @@ const router = Router();
 // POST /api/auth/register
 router.post("/register", async (req: Request, res: Response) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, username } = req.body;
 
-    console.log("Register request received:", { name, email, passwordLength: password?.length });
+    console.log("Register request received:", { name, username, email, passwordLength: password?.length });
 
     // Validation
-    if (!name || !email || !password) {
-      console.log("Missing fields:", { name: !!name, email: !!email, password: !!password });
+    if (!name || !email || !password || !username) {
+      console.log("Missing fields:", { name: !!name, username: !!username, email: !!email, password: !!password });
       return res.status(400).json({
         success: false,
-        error: "Name, email, and password are required",
+        error: "Name, username, email, and password are required",
       });
     }
 
@@ -25,12 +25,30 @@ router.post("/register", async (req: Request, res: Response) => {
     const trimmedName = String(name).trim();
     const trimmedEmail = String(email).trim().toLowerCase();
     const trimmedPassword = String(password);
+    const trimmedUsername = String(username).trim();
 
-    if (!trimmedName || !trimmedEmail || !trimmedPassword) {
+    if (!trimmedName || !trimmedEmail || !trimmedPassword || !trimmedUsername) {
       console.log("Empty after trim");
       return res.status(400).json({
         success: false,
-        error: "Name, email, and password cannot be empty",
+        error: "Name, username, email, and password cannot be empty",
+      });
+    }
+
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+      console.log("Username invalid length:", trimmedUsername.length);
+      return res.status(400).json({
+        success: false,
+        error: "Username must be 3-20 characters",
+      });
+    }
+    
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(trimmedUsername)) {
+      console.log("Invalid username format:", trimmedUsername);
+      return res.status(400).json({
+        success: false,
+        error: "Username can only contain letters, numbers, underscores, and hyphens",
       });
     }
 
@@ -60,11 +78,12 @@ router.post("/register", async (req: Request, res: Response) => {
       });
     }
 
-    const user = await User.create(trimmedName, trimmedEmail, trimmedPassword);
+    const user = await User.create(trimmedName, trimmedEmail, trimmedPassword, trimmedUsername);
     const token = generateToken({
       userId: user._id!.toString(),
       email: user.email,
       name: user.name,
+      username: user.username,
       role: user.role,
     });
 
@@ -116,6 +135,7 @@ router.post("/login", async (req: Request, res: Response) => {
       userId: user._id!.toString(),
       email: user.email,
       name: user.name,
+      username: user.username,
       role: user.role,
     });
 
@@ -160,6 +180,58 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch user";
     res.status(500).json({ success: false, error: message });
+  }
+});
+
+// PUT /api/auth/username
+router.put("/username", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
+    }
+
+    const { username } = req.body;
+    const trimmedUsername = String(username || "").trim();
+
+    if (!trimmedUsername) {
+      return res.status(400).json({ success: false, error: "Username is required" });
+    }
+
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+      return res.status(400).json({ success: false, error: "Username must be 3-20 characters" });
+    }
+
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(trimmedUsername)) {
+      return res.status(400).json({
+        success: false,
+        error: "Username can only contain letters, numbers, underscores, and hyphens",
+      });
+    }
+
+    const user = await User.updateUsername(req.user.userId, trimmedUsername);
+    if (!user) {
+       return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    // Generate fresh token with username included
+    const token = generateToken({
+      userId: user._id!.toString(),
+      email: user.email,
+      name: user.name,
+      username: user.username,
+      role: user.role,
+    });
+
+    res.json({
+      success: true,
+      data: User.formatResponse(user),
+      user: User.formatResponse(user),
+      token,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to set username";
+    res.status(400).json({ success: false, error: message });
   }
 });
 
