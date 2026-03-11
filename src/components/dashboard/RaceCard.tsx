@@ -14,10 +14,45 @@ interface RaceCardProps {
   featured?: boolean;
 }
 
+const formatSessionTime = (dateStr: string, timeZone: string) => {
+  const d = new Date(dateStr);
+  
+  const local = d.toLocaleTimeString("en-US", {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+  });
+  
+  const ist = d.toLocaleTimeString("en-US", {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Kolkata",
+  });
+  
+  return { local, ist };
+};
+
 const RaceCard = ({ race, featured = false }: RaceCardProps) => {
   const raceLocked = isRaceLocked(race);
   const sprintLocked = race.sprintWeekend ? isSprintLocked(race) : true;
-  const raceDate = new Date(race.raceStartTime);
+  
+  const now = new Date();
+  const isBeforeQuali = now < new Date(race.qualifyingStartTime);
+  const isBeforeRace = now < new Date(race.raceStartTime);
+
+  // Determine which session is next
+  let nextSessionName = "Race";
+  let nextSessionDate = race.raceStartTime;
+  
+  if (isBeforeQuali) {
+    nextSessionName = "Quali";
+    nextSessionDate = race.qualifyingStartTime;
+  } else if (isBeforeRace) {
+    nextSessionName = "Race";
+    nextSessionDate = race.raceStartTime;
+  }
 
   const getStatus = () => {
     if (race.isComplete)
@@ -75,31 +110,45 @@ const RaceCard = ({ race, featured = false }: RaceCardProps) => {
           </div>
         </div>
 
+        {/* Schedule Information */}
+        <div className="mt-4 space-y-2 p-3 bg-black/20 rounded-lg border border-white/10 text-xs">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold text-muted-foreground">Quali:</span>
+            <div className="text-right flex items-center gap-1.5">
+              <span>{formatSessionTime(race.qualifyingStartTime, race.timeZone).local}</span>
+              <span className="text-muted-foreground/30">|</span>
+              <span className="text-f1-orange font-medium">{formatSessionTime(race.qualifyingStartTime, race.timeZone).ist} IST</span>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="font-semibold text-muted-foreground">Race:</span>
+            <div className="text-right flex items-center gap-1.5">
+              <span>{formatSessionTime(race.raceStartTime, race.timeZone).local}</span>
+              <span className="text-muted-foreground/30">|</span>
+              <span className="text-f1-orange font-medium">{formatSessionTime(race.raceStartTime, race.timeZone).ist} IST</span>
+            </div>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between mt-4">
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Race Day</p>
-            <p className="text-sm font-medium">
-              {raceDate.toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
+            <p className="text-xs text-muted-foreground mb-1">Prediction Status</p>
+            <Badge className={status.color + " text-[10px]"}>
+              <status.icon className="h-3 w-3 mr-1" />
+              {status.label}
+            </Badge>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground mb-1">
-              {raceLocked ? "Status" : "Race locks in"}
+              {nextSessionName} in
             </p>
-            {raceLocked ? (
-              <Badge className={status.color + " text-xs"}>
-                <status.icon className="h-3 w-3 mr-1" />
-                {status.label}
-              </Badge>
-            ) : (
+            {!race.isComplete && nextSessionDate ? (
               <CountdownTimer
-                targetDate={race.qualifyingStartTime}
+                targetDate={nextSessionDate}
                 className="text-lg"
               />
+            ) : (
+              <span className="text-sm font-medium">Completed</span>
             )}
           </div>
         </div>
