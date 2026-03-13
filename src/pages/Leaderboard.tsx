@@ -42,7 +42,7 @@ const Leaderboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoading) return; // Wait for authentication check
+    if (authIsLoading) return; // Wait for authentication check
     
     if (!isAuthenticated) {
       navigate("/login");

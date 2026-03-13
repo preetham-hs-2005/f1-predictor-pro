@@ -36,7 +36,7 @@ const PredictionHistory = () => {
   }, [authLoading]);
 
   useEffect(() => {
-    if (loading) return;
+    if (authLoading) return;
     if (!isAuthenticated) {
       navigate("/login");
       return;
