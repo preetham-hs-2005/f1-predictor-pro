@@ -12,15 +12,16 @@ import AdminDrivers from "@/components/admin/AdminDrivers";
 import { Shield, ClipboardList, Users, Trophy, BarChart3, Settings, Database, UsersRound } from "lucide-react";
 
 const Admin = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) navigate("/login");
     else if (user?.role !== "admin") navigate("/dashboard");
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, isLoading]);
 
-  if (!user || user.role !== "admin") return null;
+  if (isLoading || !user || user.role !== "admin") return null;
 
   return (
     <div className="min-h-screen bg-background">

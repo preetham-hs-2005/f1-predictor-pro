@@ -34,7 +34,7 @@ const getRowStyle = (rank: number) => {
 };
 
 const Leaderboard = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [selectedUser, setSelectedUser] = useState<LeaderboardEntry | null>(null);
@@ -42,6 +42,8 @@ const Leaderboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isLoading) return; // Wait for authentication check
+    
     if (!isAuthenticated) {
       navigate("/login");
       return;
@@ -77,7 +79,7 @@ const Leaderboard = () => {
           <p className="text-muted-foreground text-sm">Season 2026 leaderboard</p>
         </div>
 
-        {isLoading ? (
+        {authIsLoading || isLoading ? (
           <div className="glass rounded-xl overflow-hidden animate-slide-up p-12 flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
               <Loader className="h-8 w-8 animate-spin text-primary" />

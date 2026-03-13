@@ -18,7 +18,7 @@ import DiscussionThread from "@/components/discussions/DiscussionThread";
 import { createDiscussion } from "@/lib/api/discussions";
 
 const Discussions = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedDiscussionId, setSelectedDiscussionId] = useState<string | null>(null);
@@ -26,8 +26,17 @@ const Discussions = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) navigate("/login");
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const handleCreateDiscussion = async (data: {
     title: string;

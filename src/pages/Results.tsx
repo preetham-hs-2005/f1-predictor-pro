@@ -23,7 +23,7 @@ interface RaceResult {
 }
 
 const Results = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const { drivers } = useDrivers();
   
   const getDriverName = (id?: string) => {
@@ -46,6 +46,7 @@ const Results = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authIsLoading) return;
     if (!selectedRaceId || !isAuthenticated) return;
 
     const fetchResults = async () => {
@@ -79,7 +80,12 @@ const Results = () => {
           <p className="text-muted-foreground text-sm">Official results from completed races</p>
         </div>
 
-        {completedRaces.length === 0 ? (
+        {authIsLoading ? (
+          <div className="glass rounded-xl p-12 flex flex-col items-center justify-center min-h-[400px] animate-slide-up">
+            <Loader className="h-8 w-8 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Authenticating...</p>
+          </div>
+        ) : completedRaces.length === 0 ? (
           <div className="glass rounded-xl p-12 text-center animate-slide-up">
             <p className="text-muted-foreground">No races have been completed yet this season.</p>
           </div>

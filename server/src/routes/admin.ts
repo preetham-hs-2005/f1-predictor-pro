@@ -291,8 +291,12 @@ router.post("/results", async (req: Request, res: Response) => {
   try {
     const { raceId, type, p1, p2, p3, pole, bestConstructor } = req.body;
 
-    if (!raceId || !type || !p1 || !p2 || !p3 || !pole) {
-      return res.status(400).json({ success: false, error: "Missing required fields" });
+    if (!raceId || !type) {
+      return res.status(400).json({ success: false, error: "Missing raceId or type" });
+    }
+    
+    if (!p1 && !p2 && !p3 && !pole && !bestConstructor) {
+      return res.status(400).json({ success: false, error: "At least one position or bestConstructor is required" });
     }
 
     const db = getDB();
@@ -333,32 +337,53 @@ router.post("/results", async (req: Request, res: Response) => {
     for (const prediction of predictions) {
       console.log(`[SCORING] DEBUG: Processing prediction - raceWeekendId: ${prediction.raceWeekendId}, userId: "${prediction.userId}", type of userId: ${typeof prediction.userId}`);
       
-      let p1Points = 0;
-      let p2Points = 0;
-      let p3Points = 0;
-      let polePoints = 0;
-      let podiumBonusPoints = 0;
-      let constructorPoints = 0;
-      let unexpectedPoints = 0; // Default to 0 - requires admin approval
+      const currentScore = await scoresCollection.findOne({ userId: prediction.userId, raceId, type });
+      let unexpectedPoints = currentScore?.unexpectedPoints || 0; // Retain admin approval points
+      
+      let p1Points = currentScore?.p1Points || 0;
+      let p2Points = currentScore?.p2Points || 0;
+      let p3Points = currentScore?.p3Points || 0;
+      let polePoints = currentScore?.polePoints || 0;
+      let podiumBonusPoints = currentScore?.podiumBonusPoints || 0;
+      let constructorPoints = currentScore?.constructorPoints || 0;
 
-      // Check each position
-      if (prediction.predictedP1 === p1) p1Points = 25;
-      if (prediction.predictedP2 === p2) p2Points = 18;
-      if (prediction.predictedP3 === p3) p3Points = 15;
-      if (prediction.predictedPole === pole) polePoints = 5;
+      // Check each position (only if provided in payload)
+      if (p1 !== undefined && p1 !== "") {
+        p1Points = prediction.predictedP1 === p1 ? 25 : 0;
+      }
+      if (p2 !== undefined && p2 !== "") {
+        p2Points = prediction.predictedP2 === p2 ? 18 : 0;
+      }
+      if (p3 !== undefined && p3 !== "") {
+        p3Points = prediction.predictedP3 === p3 ? 15 : 0;
+      }
+      if (pole !== undefined && pole !== "") {
+        polePoints = prediction.predictedPole === pole ? 5 : 0;
+      }
       
       // Best Constructor logic (10 points)
-      if (prediction.predictedConstructor && bestConstructor && prediction.predictedConstructor === bestConstructor) {
-        constructorPoints = 10;
+      if (bestConstructor !== undefined && bestConstructor !== "") {
+        if (prediction.predictedConstructor && prediction.predictedConstructor === bestConstructor) {
+          constructorPoints = 10;
+        } else {
+          constructorPoints = 0;
+        }
       }
 
-      // Podium bonus (all three correct)
-      if (
-        prediction.predictedP1 === p1 &&
-        prediction.predictedP2 === p2 &&
-        prediction.predictedP3 === p3
-      ) {
-        podiumBonusPoints = 10;
+      // Podium bonus (all three correct), evaluate only if all podium fields are passed or already exist
+      const checkP1 = p1 || currentScore?.p1;
+      const checkP2 = p2 || currentScore?.p2;
+      const checkP3 = p3 || currentScore?.p3;
+      if (checkP1 && checkP2 && checkP3) {
+        if (
+          prediction.predictedP1 === checkP1 &&
+          prediction.predictedP2 === checkP2 &&
+          prediction.predictedP3 === checkP3
+        ) {
+          podiumBonusPoints = 10;
+        } else {
+          podiumBonusPoints = 0;
+        }
       }
 
       const total = p1Points + p2Points + p3Points + polePoints + podiumBonusPoints + unexpectedPoints + constructorPoints;

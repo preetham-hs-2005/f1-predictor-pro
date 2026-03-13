@@ -17,15 +17,24 @@ const Predict = () => {
     raceId: string;
     type: string;
   }>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const predictionType = type === "sprint" ? "sprint" : "race";
   const race = raceId ? getRaceById(raceId) : null;
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) navigate("/login");
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, isLoading]);
+
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // Redirect if trying to access sprint for non-sprint weekend
   useEffect(() => {

@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Flag, Trophy, Timer, Zap } from "lucide-react";
 
 const Index = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) navigate("/dashboard");
-  }, [isAuthenticated, navigate]);
+    if (!isLoading && isAuthenticated) navigate("/dashboard");
+  }, [isLoading, isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">

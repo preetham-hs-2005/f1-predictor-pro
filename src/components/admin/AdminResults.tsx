@@ -85,13 +85,13 @@ const AdminResults = () => {
   };
 
   const handleSubmit = async () => {
-    if (!p1 || !p2 || !p3 || !pole || !bestConstructor) {
-      toast.error("All positions must be filled");
+    if (!p1 && !p2 && !p3 && !pole && !bestConstructor) {
+      toast.error("At least one position or best constructor must be filled");
       return;
     }
-    const podium = [p1, p2, p3];
-    if (new Set(podium).size !== 3) {
-      toast.error("Each podium position must be a different driver");
+    const podium = [p1, p2, p3].filter(Boolean);
+    if (new Set(podium).size !== podium.length) {
+      toast.error("Each selected podium position must be a different driver");
       return;
     }
 

@@ -25,12 +25,18 @@ export interface PredictionData {
 }
 
 const PredictionHistory = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [predictions, setPredictions] = useState<PredictionData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Initialize loading as true from AuthContext if it's still initializing
   useEffect(() => {
+    if (authLoading) setLoading(true);
+  }, [authLoading]);
+
+  useEffect(() => {
+    if (loading) return;
     if (!isAuthenticated) {
       navigate("/login");
       return;
