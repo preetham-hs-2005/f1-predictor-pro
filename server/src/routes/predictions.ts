@@ -18,6 +18,7 @@ router.post("/submit", authMiddleware, async (req: Request, res: Response) => {
       predictedP2,
       predictedP3,
       predictedPole,
+      predictedConstructor,
       unexpectedStatement,
     } = req.body;
 
@@ -43,6 +44,7 @@ router.post("/submit", authMiddleware, async (req: Request, res: Response) => {
         predictedP2,
         predictedP3,
         predictedPole,
+        predictedConstructor,
         unexpectedStatement: unexpectedStatement || "",
       });
     } else {
@@ -55,6 +57,7 @@ router.post("/submit", authMiddleware, async (req: Request, res: Response) => {
         predictedP2,
         predictedP3,
         predictedPole,
+        predictedConstructor,
         unexpectedStatement: unexpectedStatement || "",
       });
     }
@@ -170,10 +173,11 @@ router.put("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
       predictedP2,
       predictedP3,
       predictedPole,
+      predictedConstructor,
       unexpectedStatement,
     } = req.body;
 
-    console.log("Update request:", { raceWeekendId, type, predictedP1, predictedPole, unexpectedStatement });
+    console.log("Update request:", { raceWeekendId, type, predictedP1, predictedPole, predictedConstructor, unexpectedStatement });
 
     const existing = await Prediction.findByUserAndRace(
       req.user.userId,
@@ -193,6 +197,7 @@ router.put("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
       ...(predictedP2 !== undefined && { predictedP2 }),
       ...(predictedP3 !== undefined && { predictedP3 }),
       ...(predictedPole !== undefined && { predictedPole }),
+      ...(predictedConstructor !== undefined && { predictedConstructor }),
       ...(unexpectedStatement !== undefined && { unexpectedStatement }),
     };
 

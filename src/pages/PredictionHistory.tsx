@@ -18,6 +18,7 @@ export interface PredictionData {
   predictedP2: string;
   predictedP3: string;
   predictedPole: string;
+  predictedConstructor?: string;
   unexpectedStatement: string;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -108,7 +109,7 @@ const PredictionHistory = () => {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">P1</p>
                         <p className="font-semibold">{prediction.predictedP1}</p>
@@ -124,6 +125,10 @@ const PredictionHistory = () => {
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Pole</p>
                         <p className="font-semibold">{prediction.predictedPole}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Constructor</p>
+                        <p className="font-semibold">{prediction.predictedConstructor || "None"}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground mb-1">Unexpected</p>

@@ -20,6 +20,7 @@ export interface Prediction {
   id: string;
   userId: string;
   raceWeekendId: string;
+  type: "sprint" | "race";
   predictedP1: string;
   predictedP2: string;
   predictedP3: string;
@@ -28,12 +29,13 @@ export interface Prediction {
   unexpectedStatement: string;
   unexpectedAwarded: boolean;
   calculatedPoints: CalculatedPoints | null;
-  submittedAt: Date;
-  updatedAt: Date;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export interface SubmitPredictionRequest {
   raceWeekendId: string;
+  type?: "sprint" | "race";
   predictedP1: string;
   predictedP2: string;
   predictedP3: string;
@@ -67,9 +69,9 @@ export async function submitPrediction(
 /**
  * Get user's prediction for a specific race
  */
-export async function getUserPrediction(raceId: string): Promise<Prediction> {
+export async function getUserPrediction(raceId: string, type: "sprint" | "race" = "race"): Promise<Prediction> {
   const response = await apiClient.get<PredictionResponse>(
-    `/api/predictions/${raceId}`
+    `/api/predictions/${raceId}?type=${type}`
   );
 
   if (!response.success || !response.data) {
@@ -99,10 +101,11 @@ export async function getUserPredictions(): Promise<Prediction[]> {
  */
 export async function updatePrediction(
   raceId: string,
-  data: Partial<SubmitPredictionRequest>
+  data: Partial<SubmitPredictionRequest>,
+  type: "sprint" | "race" = "race"
 ): Promise<Prediction> {
   const response = await apiClient.put<PredictionResponse>(
-    `/api/predictions/${raceId}`,
+    `/api/predictions/${raceId}?type=${type}`,
     data
   );
 
@@ -116,9 +119,9 @@ export async function updatePrediction(
 /**
  * Delete a prediction
  */
-export async function deletePrediction(raceId: string): Promise<void> {
+export async function deletePrediction(raceId: string, type: "sprint" | "race" = "race"): Promise<void> {
   const response = await apiClient.delete<ApiResponse<null>>(
-    `/api/predictions/${raceId}`
+    `/api/predictions/${raceId}?type=${type}`
   );
 
   if (!response.success) {

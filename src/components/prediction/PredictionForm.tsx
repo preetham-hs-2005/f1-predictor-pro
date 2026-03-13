@@ -54,7 +54,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
 
       try {
         setInitializing(true);
-        const prediction = await getUserPrediction(race.id);
+        const prediction = await getUserPrediction(race.id, type);
         setP1(prediction.predictedP1);
         setP2(prediction.predictedP2);
         setP3(prediction.predictedP3);
@@ -69,7 +69,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
     };
 
     loadPrediction();
-  }, [race.id, user]);
+  }, [race.id, type, user]);
 
   const canSubmit =
     p1 && p2 && p3 && pole && constructor && unexpected.length >= 10 && !locked && !loading;
@@ -92,6 +92,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
       setLoading(true);
       await submitPrediction({
         raceWeekendId: race.id,
+        type,
         predictedP1: p1,
         predictedP2: p2,
         predictedP3: p3,
