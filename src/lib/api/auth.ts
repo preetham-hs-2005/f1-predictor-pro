@@ -102,6 +102,26 @@ export async function getCurrentUser(): Promise<AuthUser> {
 }
 
 /**
+ * Set user's name (Profile Edit)
+ */
+export async function updateProfile(name: string): Promise<AuthUser> {
+  const response = await apiClient.put<AuthResponse>("/api/auth/profile", {
+    name,
+  });
+
+  if (!response.success || !response.user) {
+    throw new Error(response.error || "Failed to update profile name");
+  }
+
+  // Store token if provided
+  if (response.token) {
+    apiClient.setAuthToken(response.token, response.user);
+  }
+
+  return response.user;
+}
+
+/**
  * Logout user
  */
 export async function logoutUser(): Promise<void> {

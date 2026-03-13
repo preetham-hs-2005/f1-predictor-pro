@@ -340,6 +340,9 @@ router.post("/results", async (req: Request, res: Response) => {
       const currentScore = await scoresCollection.findOne({ userId: prediction.userId, raceId, type });
       let unexpectedPoints = currentScore?.unexpectedPoints || 0; // Retain admin approval points
       
+      // Points modifier based on race or sprint validation
+      const multiplier = type === "sprint" ? 0.5 : 1;
+      
       let p1Points = currentScore?.p1Points || 0;
       let p2Points = currentScore?.p2Points || 0;
       let p3Points = currentScore?.p3Points || 0;
@@ -349,22 +352,22 @@ router.post("/results", async (req: Request, res: Response) => {
 
       // Check each position (only if provided in payload)
       if (p1 !== undefined && p1 !== "") {
-        p1Points = prediction.predictedP1 === p1 ? 25 : 0;
+        p1Points = prediction.predictedP1 === p1 ? (25 * multiplier) : 0;
       }
       if (p2 !== undefined && p2 !== "") {
-        p2Points = prediction.predictedP2 === p2 ? 18 : 0;
+        p2Points = prediction.predictedP2 === p2 ? (20 * multiplier) : 0;
       }
       if (p3 !== undefined && p3 !== "") {
-        p3Points = prediction.predictedP3 === p3 ? 15 : 0;
+        p3Points = prediction.predictedP3 === p3 ? (15 * multiplier) : 0;
       }
       if (pole !== undefined && pole !== "") {
-        polePoints = prediction.predictedPole === pole ? 5 : 0;
+        polePoints = prediction.predictedPole === pole ? (10 * multiplier) : 0;
       }
       
       // Best Constructor logic (10 points)
       if (bestConstructor !== undefined && bestConstructor !== "") {
         if (prediction.predictedConstructor && prediction.predictedConstructor === bestConstructor) {
-          constructorPoints = 10;
+          constructorPoints = (10 * multiplier);
         } else {
           constructorPoints = 0;
         }
@@ -380,7 +383,7 @@ router.post("/results", async (req: Request, res: Response) => {
           prediction.predictedP2 === checkP2 &&
           prediction.predictedP3 === checkP3
         ) {
-          podiumBonusPoints = 10;
+          podiumBonusPoints = (20 * multiplier);
         } else {
           podiumBonusPoints = 0;
         }
@@ -489,14 +492,15 @@ router.post("/scores/:userId/award-unexpected", async (req: Request, res: Respon
         type,
       });
 
-      // Calculate race points
+      // Calculate race points (including dynamic multiplier)
+      const multiplier = type === "sprint" ? 0.5 : 1;
       let p1Points = 0, p2Points = 0, p3Points = 0, polePoints = 0, podiumBonusPoints = 0;
       
       if (prediction && result) {
-        if (prediction.predictedP1 === result.p1) p1Points = 25;
-        if (prediction.predictedP2 === result.p2) p2Points = 18;
-        if (prediction.predictedP3 === result.p3) p3Points = 15;
-        if (prediction.predictedPole === result.pole) polePoints = 5;
+        if (prediction.predictedP1 === result.p1) p1Points = 25 * multiplier;
+        if (prediction.predictedP2 === result.p2) p2Points = 20 * multiplier;
+        if (prediction.predictedP3 === result.p3) p3Points = 15 * multiplier;
+        if (prediction.predictedPole === result.pole) polePoints = 10 * multiplier;
         
         // Podium bonus
         if (
@@ -504,7 +508,7 @@ router.post("/scores/:userId/award-unexpected", async (req: Request, res: Respon
           prediction.predictedP2 === result.p2 &&
           prediction.predictedP3 === result.p3
         ) {
-          podiumBonusPoints = 10;
+          podiumBonusPoints = 20 * multiplier;
         }
       }
 

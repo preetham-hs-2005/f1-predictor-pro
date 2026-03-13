@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Shield, ShieldOff, Trash2, Download, Search, Filter, TrendingUp, Eye, EyeOff, Eye as EyeViewIcon } from "lucide-react";
+import { Shield, ShieldOff, Trash2, Download, Search, Filter, TrendingUp, Eye, EyeOff, Eye as EyeViewIcon, History } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const AdminUsersAdvanced = () => {
   const { user: currentUser } = useAuth();
@@ -282,21 +283,29 @@ const AdminUsersAdvanced = () => {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold truncate">{u.name}</span>
-                        {u.role === "admin" && (
-                          <Badge className="bg-primary/20 text-primary text-[10px] shrink-0">
-                            <Shield className="h-2.5 w-2.5 mr-1" />
-                            Admin
-                          </Badge>
-                        )}
-                        {u.id === currentUser?.id && (
-                          <Badge variant="outline" className="text-[10px] shrink-0">
-                            You
-                          </Badge>
-                        )}
+                      <div className="flex items-center gap-3 mb-2">
+                        <Avatar className="h-10 w-10 border border-border/50 shrink-0 bg-background/50">
+                          <AvatarImage src={`https://api.dicebear.com/7.x/identicon/svg?seed=${u.id}`} alt={u.name} />
+                          <AvatarFallback>{u.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold truncate">{u.name}</span>
+                            {u.role === "admin" && (
+                              <Badge className="bg-primary/20 text-primary text-[10px] shrink-0">
+                                <Shield className="h-2.5 w-2.5 mr-1" />
+                                Admin
+                              </Badge>
+                            )}
+                            {u.id === currentUser?.id && (
+                              <Badge variant="outline" className="text-[10px] shrink-0">
+                                You
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate mb-2">{u.email}</p>
                       
                       {/* Stats Row */}
                       <div className="grid grid-cols-4 gap-2 text-xs">
@@ -331,7 +340,7 @@ const AdminUsersAdvanced = () => {
                         className="text-xs h-8"
                         title="View all predictions"
                       >
-                        <EyeViewIcon className="h-3 w-3" />
+                        <History className="h-4 w-4" />
                       </Button>
                       <Button
                         size="sm"
@@ -340,7 +349,7 @@ const AdminUsersAdvanced = () => {
                         className="text-xs h-8"
                         title={u.hidden ? "Show on leaderboard" : "Hide from leaderboard"}
                       >
-                        {u.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                        {u.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                       {u.id !== currentUser?.id && (
                         <>
@@ -352,9 +361,9 @@ const AdminUsersAdvanced = () => {
                             title={u.role === "admin" ? "Demote to User" : "Promote to Admin"}
                           >
                             {u.role === "admin" ? (
-                              <ShieldOff className="h-3 w-3" />
+                              <ShieldOff className="h-4 w-4" />
                             ) : (
-                              <Shield className="h-3 w-3" />
+                              <Shield className="h-4 w-4" />
                             )}
                           </Button>
                           <Button

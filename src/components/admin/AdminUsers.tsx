@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Shield, ShieldOff } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const AdminUsers = () => {
   const { user: currentUser } = useAuth();
@@ -39,6 +40,10 @@ const AdminUsers = () => {
               className="flex items-center justify-between py-3 px-4 rounded-lg bg-background/30"
             >
               <div className="flex items-center gap-3 min-w-0">
+                <Avatar className="h-9 w-9 border border-border/50 shrink-0 bg-background/50">
+                  <AvatarImage src={`https://api.dicebear.com/7.x/identicon/svg?seed=${u.id}`} alt={u.name} />
+                  <AvatarFallback>{u.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold truncate">{u.name}</span>
@@ -63,18 +68,13 @@ const AdminUsers = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => handleToggleRole(u.id, u.role)}
-                    className="text-xs gap-1"
+                    className="text-xs h-8 px-2"
+                    title={u.role === "admin" ? "Demote to User" : "Make Admin"}
                   >
                     {u.role === "admin" ? (
-                      <>
-                        <ShieldOff className="h-3 w-3" />
-                        Demote
-                      </>
+                      <ShieldOff className="h-4 w-4" />
                     ) : (
-                      <>
-                        <Shield className="h-3 w-3" />
-                        Make Admin
-                      </>
+                      <Shield className="h-4 w-4" />
                     )}
                   </Button>
                 )}

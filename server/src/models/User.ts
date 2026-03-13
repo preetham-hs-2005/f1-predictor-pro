@@ -94,6 +94,27 @@ export class User {
     return result;
   }
 
+  static async updateName(id: string | ObjectId, name: string): Promise<UserDocument | null> {
+    const db = getDB();
+    const collection = db.collection<UserDocument>("users");
+    
+    if (typeof id === "string") {
+      id = new ObjectId(id);
+    }
+
+    const result = await collection.findOneAndUpdate(
+      { _id: id },
+      { $set: { name, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+    
+    if (!result) {
+      throw new Error("User not found");
+    }
+    
+    return result;
+  }
+
   static async verifyPassword(user: UserDocument, password: string): Promise<boolean> {
     return comparePassword(password, user.password);
   }

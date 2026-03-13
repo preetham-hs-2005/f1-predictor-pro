@@ -235,6 +235,50 @@ router.put("/username", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// PUT /api/auth/profile
+router.put("/profile", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
+    }
+
+    const { name } = req.body;
+    const trimmedName = String(name || "").trim();
+
+    if (!trimmedName) {
+      return res.status(400).json({ success: false, error: "Name is required" });
+    }
+
+    if (trimmedName.length < 2 || trimmedName.length > 50) {
+      return res.status(400).json({ success: false, error: "Name must be 2-50 characters" });
+    }
+
+    const user = await User.updateName(req.user.userId, trimmedName);
+    if (!user) {
+       return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    // Generate fresh token with updated name
+    const token = generateToken({
+      userId: user._id!.toString(),
+      email: user.email,
+      name: user.name,
+      username: user.username,
+      role: user.role,
+    });
+
+    res.json({
+      success: true,
+      data: User.formatResponse(user),
+      user: User.formatResponse(user),
+      token,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update profile name";
+    res.status(400).json({ success: false, error: message });
+  }
+});
+
 // POST /api/auth/logout
 router.post("/logout", authMiddleware, async (req: Request, res: Response) => {
   try {

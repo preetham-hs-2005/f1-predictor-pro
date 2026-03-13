@@ -1,9 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Trophy, LayoutDashboard, LogOut, Menu, Flag, Shield, History, MessageCircle, FlagTriangleRight } from "lucide-react";
+import { Trophy, LayoutDashboard, LogOut, Menu, Flag, Shield, History, MessageCircle, FlagTriangleRight, UserCircle } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EditProfileModal } from "@/components/profile/EditProfileModal";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -19,6 +29,7 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
@@ -62,14 +73,41 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-3">
           {user && (
-            <span className="text-sm text-muted-foreground">
-              {user.name}
-            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="focus:outline-none rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-transform hover:scale-105">
+                <Avatar className="h-10 w-10 border border-border/50 bg-background/50">
+                  <AvatarImage src={`https://api.dicebear.com/7.x/identicon/svg?seed=${user.id}`} alt={user.name} />
+                  <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setProfileOpen(true)} className="cursor-pointer">
+                  <UserCircle className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:bg-destructive/10">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-          <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
+          {!user && (
+            <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          )}
         </div>
 
         {/* Mobile nav */}
@@ -114,6 +152,7 @@ const Navbar = () => {
           </SheetContent>
         </Sheet>
       </div>
+      <EditProfileModal isOpen={profileOpen} onOpenChange={setProfileOpen} />
     </header>
   );
 };

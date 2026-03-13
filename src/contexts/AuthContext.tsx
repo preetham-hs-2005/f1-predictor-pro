@@ -23,6 +23,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string, username: string) => Promise<{ success: boolean; error?: string }>;
   setUsername: (username: string) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -119,8 +120,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const updateProfile = async (name: string) => {
+    try {
+      setIsLoading(true);
+      const userData = await authApi.updateProfile(name);
+      setUser(userData);
+      
+      const session = localStorage.getItem(SESSION_KEY);
+      if (session) {
+        const sessionData: SessionData = JSON.parse(session);
+        sessionData.user = userData;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+      }
+      
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update profile";
+      return { success: false, error: message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, setUsername }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, setUsername, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
