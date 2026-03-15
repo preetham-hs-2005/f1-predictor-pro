@@ -37,21 +37,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Initialize session from localStorage on mount
   useEffect(() => {
-    try {
-      const session = localStorage.getItem(SESSION_KEY);
-      if (session) {
-        const sessionData: SessionData = JSON.parse(session);
-        setUser(sessionData.user);
-        // Restore token to API client
-        if (sessionData.token) {
-          apiClient.setAuthToken(sessionData.token, sessionData.user);
+    const initSession = async () => {
+      try {
+        const session = localStorage.getItem(SESSION_KEY);
+        if (session) {
+          const sessionData: SessionData = JSON.parse(session);
+          // Restore token to API client first
+          if (sessionData.token) {
+            apiClient.setAuthToken(sessionData.token, sessionData.user);
+          }
+          
+          // Validate token by fetching current user
+          try {
+            const currentUser = await authApi.getCurrentUser();
+            setUser(currentUser);
+            console.log("[AuthContext] Session restored and validated for user:", currentUser.name);
+          } catch (error) {
+            console.warn("[AuthContext] Token validation failed, clearing session:", error);
+            // Token is invalid or expired, clear it
+            localStorage.removeItem(SESSION_KEY);
+            setUser(null);
+          }
         }
+      } catch (error) {
+        console.error("[AuthContext] Session restore error:", error);
+        localStorage.removeItem(SESSION_KEY);
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      localStorage.removeItem(SESSION_KEY);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+    
+    initSession();
   }, []);
 
   const login = async (email: string, password: string) => {
