@@ -1,20 +1,56 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import RaceCard from "@/components/dashboard/RaceCard";
-import { getUpcomingRaces } from "@/lib/data/raceCalendar";
-import { raceCalendar } from "@/lib/data/raceCalendar";
+import { getUpcomingRacesFromServer } from "@/lib/api/races";
+import { type RaceWeekend } from "@/lib/data/raceCalendar";
 import { Badge } from "@/components/ui/badge";
 import { Zap } from "lucide-react";
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [upcoming, setUpcoming] = useState<RaceWeekend[]>([]);
+  const [racesLoading, setRacesLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate("/login");
   }, [isLoading, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    loadRaces();
+  }, []);
+
+  const loadRaces = async () => {
+    setRacesLoading(true);
+    try {
+      const serverRaces = await getUpcomingRacesFromServer();
+      // Convert ServerRace to RaceWeekend format
+      const converted: RaceWeekend[] = serverRaces.map((race) => ({
+        id: race.raceId,
+        raceName: race.raceName,
+        circuitName: race.circuitName,
+        country: "",
+        countryFlag: race.countryFlag,
+        round: race.round,
+        qualifyingStartTime: race.qualifyingStartTime,
+        raceStartTime: race.raceStartTime,
+        sprintWeekend: race.sprintWeekend,
+        sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+        timeZone: race.timeZone,
+        isLocked: false,
+        isComplete: false,
+        cancelled: race.cancelled,
+        officialResults: null,
+      }));
+      setUpcoming(converted);
+    } catch (error) {
+      console.error("Failed to load races:", error);
+    } finally {
+      setRacesLoading(false);
+    }
+  };
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -24,7 +60,6 @@ const Dashboard = () => {
     );
   }
 
-  const upcoming = getUpcomingRaces();
   const featured = upcoming.slice(0, 3);
   const rest = upcoming.slice(3);
 

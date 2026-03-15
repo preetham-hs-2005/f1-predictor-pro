@@ -5,7 +5,42 @@ import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 
-// Apply auth middleware to all admin routes
+/**
+ * PUBLIC: GET /api/admin/races
+ * Get all races - accessible without authentication
+ */
+router.get("/races", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const racesCollection = db.collection("races");
+    
+    const races = await racesCollection.find({}).sort({ round: 1 }).toArray();
+    
+    res.json({
+      success: true,
+      data: races.map((r: any) => ({
+        id: r._id.toString(),
+        raceId: r.raceId,
+        raceName: r.raceName,
+        round: r.round,
+        countryFlag: r.countryFlag,
+        circuitName: r.circuitName,
+        qualifyingStartTime: r.qualifyingStartTime,
+        raceStartTime: r.raceStartTime,
+        timeZone: r.timeZone,
+        sprintWeekend: r.sprintWeekend,
+        sprintQualifyingStartTime: r.sprintQualifyingStartTime,
+        cancelled: r.cancelled || false,
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch races";
+    console.error("Get races error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+// Apply auth middleware to all admin routes below
 router.use(authMiddleware);
 
 /**
@@ -1188,30 +1223,6 @@ router.get("/races/debug/list", async (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/admin/races
- * Get all races with their current status
- */
-router.get("/races", async (req: Request, res: Response) => {
-  try {
-    const db = getDB();
-    const racesCollection = db.collection("races");
-    
-    const races = await racesCollection.find({}).sort({ round: 1 }).toArray();
-    
-    res.json({
-      success: true,
-      data: races.map((r) => ({
-        id: r._id.toString(),
-        ...r,
-      })),
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch races";
-    console.error("Admin get races error:", message);
-    res.status(500).json({ success: false, error: message });
-  }
-});
 
 /**
  * PATCH /api/admin/races/:raceId/cancel
