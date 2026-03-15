@@ -108,9 +108,6 @@ const Results = () => {
                     <div className="flex items-center gap-2">
                       <span>{race.countryFlag}</span>
                       <span className="truncate flex-1 text-xs">{race.raceName}</span>
-                      {race.cancelled && (
-                        <span className="text-xs font-bold text-destructive">✕</span>
-                      )}
                     </div>
                   </button>
                 ))}
