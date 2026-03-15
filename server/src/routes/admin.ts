@@ -1162,6 +1162,33 @@ router.delete("/data/clear", async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/admin/races/debug/list
+ * Debug endpoint to see what races exist in database
+ */
+router.get("/races/debug/list", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const racesCollection = db.collection("races");
+    const count = await racesCollection.countDocuments();
+    const sampleRaces = await racesCollection.find({}).limit(3).toArray();
+    
+    res.json({
+      success: true,
+      totalRaces: count,
+      sampleRaces: sampleRaces.map((r: any) => ({
+        _id: r._id?.toString(),
+        raceId: r.raceId,
+        raceName: r.raceName,
+        cancelled: r.cancelled,
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to get races";
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+/**
  * GET /api/admin/races
  * Get all races with their current status
  */
@@ -1194,15 +1221,19 @@ router.patch("/races/:raceId/cancel", async (req: Request, res: Response) => {
   try {
     const db = getDB();
     const racesCollection = db.collection("races");
+    const raceIdParam = req.params.raceId;
     
-    const race = await racesCollection.findOne({ raceId: req.params.raceId });
+    console.log(`[ADMIN] Toggle race for: ${raceIdParam}`);
+    
+    const race = await racesCollection.findOne({ raceId: raceIdParam });
     
     if (!race) {
+      console.log(`[ADMIN] Race not found: ${raceIdParam}. Available:`, await racesCollection.find({}).project({ raceId: 1 }).limit(2).toArray());
       return res.status(404).json({ success: false, error: "Race not found" });
     }
     
     const updated = await racesCollection.findOneAndUpdate(
-      { raceId: req.params.raceId },
+      { raceId: raceIdParam },
       { $set: { cancelled: !race.cancelled, updatedAt: new Date() } },
       { returnDocument: "after" }
     );
