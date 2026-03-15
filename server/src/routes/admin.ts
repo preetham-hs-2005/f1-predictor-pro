@@ -1298,4 +1298,68 @@ router.delete("/races/:raceId", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/admin/races/seed
+ * Seed database with default race calendar
+ */
+router.post("/races/seed/default", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const racesCollection = db.collection("races");
+    
+    // Default race data matching F1 2026 calendar
+    const defaultRaces = [
+      { raceId: "australia-2026", raceName: "Australian Grand Prix", round: 1, countryFlag: "🇦🇺", circuitName: "Albert Park Circuit", qualifyingStartTime: "2026-03-07T05:00:00Z", raceStartTime: "2026-03-08T04:00:00Z", timeZone: "Australia/Melbourne", sprintWeekend: false, cancelled: false },
+      { raceId: "china-2026", raceName: "Chinese Grand Prix", round: 2, countryFlag: "🇨🇳", circuitName: "Shanghai International Circuit", sprintQualifyingStartTime: "2026-03-13T07:00:00Z", qualifyingStartTime: "2026-03-14T07:00:00Z", raceStartTime: "2026-03-15T07:00:00Z", timeZone: "Asia/Shanghai", sprintWeekend: true, cancelled: false },
+      { raceId: "japan-2026", raceName: "Japanese Grand Prix", round: 3, countryFlag: "🇯🇵", circuitName: "Suzuka Circuit", qualifyingStartTime: "2026-03-28T06:00:00Z", raceStartTime: "2026-03-29T05:00:00Z", timeZone: "Asia/Tokyo", sprintWeekend: false, cancelled: false },
+      { raceId: "bahrain-2026", raceName: "Bahrain Grand Prix", round: 4, countryFlag: "🇧🇭", circuitName: "Bahrain International Circuit", qualifyingStartTime: "2026-04-11T16:00:00Z", raceStartTime: "2026-04-12T15:00:00Z", timeZone: "Asia/Bahrain", sprintWeekend: false, cancelled: false },
+      { raceId: "saudi-2026", raceName: "Saudi Arabian Grand Prix", round: 5, countryFlag: "🇦🇸", circuitName: "Jeddah Corniche Circuit", qualifyingStartTime: "2026-04-18T17:00:00Z", raceStartTime: "2026-04-19T17:00:00Z", timeZone: "Asia/Riyadh", sprintWeekend: false, cancelled: false },
+      { raceId: "miami-2026", raceName: "Miami Grand Prix", round: 6, countryFlag: "🇺🇸", circuitName: "Miami International Autodrome", sprintQualifyingStartTime: "2026-05-02T00:00:00Z", qualifyingStartTime: "2026-05-02T20:00:00Z", raceStartTime: "2026-05-03T20:00:00Z", timeZone: "America/New_York", sprintWeekend: true, cancelled: false },
+      { raceId: "canada-2026", raceName: "Canadian Grand Prix", round: 7, countryFlag: "🇨🇦", circuitName: "Circuit Gilles Villeneuve", sprintQualifyingStartTime: "2026-05-22T20:30:00Z", qualifyingStartTime: "2026-05-23T20:00:00Z", raceStartTime: "2026-05-24T20:00:00Z", timeZone: "America/Toronto", sprintWeekend: true, cancelled: false },
+      { raceId: "monaco-2026", raceName: "Monaco Grand Prix", round: 8, countryFlag: "🇲🇨", circuitName: "Circuit de Monaco", qualifyingStartTime: "2026-06-06T14:00:00Z", raceStartTime: "2026-06-07T13:00:00Z", timeZone: "Europe/Monaco", sprintWeekend: false, cancelled: false },
+      { raceId: "spain-2026", raceName: "Spanish Grand Prix", round: 9, countryFlag: "🇪🇸", circuitName: "Circuit de Barcelona-Catalunya", qualifyingStartTime: "2026-06-13T14:00:00Z", raceStartTime: "2026-06-14T13:00:00Z", timeZone: "Europe/Madrid", sprintWeekend: false, cancelled: false },
+      { raceId: "austria-2026", raceName: "Austrian Grand Prix", round: 10, countryFlag: "🇦🇹", circuitName: "Red Bull Ring", qualifyingStartTime: "2026-06-27T14:00:00Z", raceStartTime: "2026-06-28T13:00:00Z", timeZone: "Europe/Vienna", sprintWeekend: false, cancelled: false },
+      { raceId: "britain-2026", raceName: "British Grand Prix", round: 11, countryFlag: "🇬🇧", circuitName: "Silverstone Circuit", sprintQualifyingStartTime: "2026-07-03T15:30:00Z", qualifyingStartTime: "2026-07-04T15:00:00Z", raceStartTime: "2026-07-05T14:00:00Z", timeZone: "Europe/London", sprintWeekend: true, cancelled: false },
+      { raceId: "belgium-2026", raceName: "Belgian Grand Prix", round: 12, countryFlag: "🇧🇪", circuitName: "Spa-Francorchamps", qualifyingStartTime: "2026-07-18T14:00:00Z", raceStartTime: "2026-07-19T13:00:00Z", timeZone: "Europe/Brussels", sprintWeekend: false, cancelled: false },
+      { raceId: "hungary-2026", raceName: "Hungarian Grand Prix", round: 13, countryFlag: "🇭🇺", circuitName: "Hungaroring", qualifyingStartTime: "2026-07-25T14:00:00Z", raceStartTime: "2026-07-26T13:00:00Z", timeZone: "Europe/Budapest", sprintWeekend: false, cancelled: false },
+      { raceId: "dutch-2026", raceName: "Dutch Grand Prix", round: 14, countryFlag: "🇳🇱", circuitName: "Circuit Zandvoort", sprintQualifyingStartTime: "2026-08-21T14:30:00Z", qualifyingStartTime: "2026-08-22T14:00:00Z", raceStartTime: "2026-08-23T13:00:00Z", timeZone: "Europe/Amsterdam", sprintWeekend: true, cancelled: false },
+      { raceId: "italy-2026", raceName: "Italian Grand Prix", round: 15, countryFlag: "🇮🇹", circuitName: "Monza Circuit", qualifyingStartTime: "2026-09-05T14:00:00Z", raceStartTime: "2026-09-06T13:00:00Z", timeZone: "Europe/Rome", sprintWeekend: false, cancelled: false },
+      { raceId: "madrid-2026", raceName: "Madrid Grand Prix", round: 16, countryFlag: "🇪🇸", circuitName: "Madrid Circuit", qualifyingStartTime: "2026-09-12T14:00:00Z", raceStartTime: "2026-09-13T13:00:00Z", timeZone: "Europe/Madrid", sprintWeekend: false, cancelled: false },
+      { raceId: "azerbaijan-2026", raceName: "Azerbaijan Grand Prix", round: 17, countryFlag: "🇦🇿", circuitName: "Baku City Circuit", qualifyingStartTime: "2026-09-25T12:00:00Z", raceStartTime: "2026-09-26T11:00:00Z", timeZone: "Asia/Baku", sprintWeekend: false, cancelled: false },
+      { raceId: "singapore-2026", raceName: "Singapore Grand Prix", round: 18, countryFlag: "🇸🇬", circuitName: "Marina Bay Street Circuit", sprintQualifyingStartTime: "2026-10-09T13:00:00Z", qualifyingStartTime: "2026-10-10T13:00:00Z", raceStartTime: "2026-10-11T12:00:00Z", timeZone: "Asia/Singapore", sprintWeekend: true, cancelled: false },
+      { raceId: "usa-2026", raceName: "United States Grand Prix", round: 19, countryFlag: "🇺🇸", circuitName: "Circuit of the Americas", qualifyingStartTime: "2026-10-24T21:00:00Z", raceStartTime: "2026-10-25T20:00:00Z", timeZone: "America/Chicago", sprintWeekend: false, cancelled: false },
+      { raceId: "mexico-2026", raceName: "Mexico City Grand Prix", round: 20, countryFlag: "🇲🇽", circuitName: "Autódromo Hermanos Rodríguez", qualifyingStartTime: "2026-10-31T21:00:00Z", raceStartTime: "2026-11-01T20:00:00Z", timeZone: "America/Mexico_City", sprintWeekend: false, cancelled: false },
+      { raceId: "brazil-2026", raceName: "São Paulo Grand Prix", round: 21, countryFlag: "🇧🇷", circuitName: "Interlagos Circuit", qualifyingStartTime: "2026-11-07T18:00:00Z", raceStartTime: "2026-11-08T17:00:00Z", timeZone: "America/Sao_Paulo", sprintWeekend: false, cancelled: false },
+      { raceId: "vegas-2026", raceName: "Las Vegas Grand Prix", round: 22, countryFlag: "🇺🇸", circuitName: "Las Vegas Street Circuit", qualifyingStartTime: "2026-11-21T04:00:00Z", raceStartTime: "2026-11-22T04:00:00Z", timeZone: "America/Los_Angeles", sprintWeekend: false, cancelled: false },
+      { raceId: "qatar-2026", raceName: "Qatar Grand Prix", round: 23, countryFlag: "🇶🇦", circuitName: "Losail International Circuit", qualifyingStartTime: "2026-11-28T18:00:00Z", raceStartTime: "2026-11-29T16:00:00Z", timeZone: "Asia/Qatar", sprintWeekend: false, cancelled: false },
+      { raceId: "abudhabi-2026", raceName: "Abu Dhabi Grand Prix", round: 24, countryFlag: "🇦🇪", circuitName: "Yas Marina Circuit", qualifyingStartTime: "2026-12-05T14:00:00Z", raceStartTime: "2026-12-06T13:00:00Z", timeZone: "Asia/Dubai", sprintWeekend: false, cancelled: false },
+    ];
+    
+    // Clear existing races
+    await racesCollection.deleteMany({});
+    
+    // Insert default races
+    const result = await racesCollection.insertMany(
+      defaultRaces.map((race) => ({
+        ...race,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }))
+    );
+    
+    res.json({
+      success: true,
+      message: `Seeded ${Object.keys(result.insertedIds).length} races`,
+      data: {
+        insertedCount: Object.keys(result.insertedIds).length,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to seed races";
+    console.error("Admin seed races error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+
 export default router;

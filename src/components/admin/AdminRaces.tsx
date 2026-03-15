@@ -4,12 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Loader2, X, Plus, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, X, Plus, AlertCircle, CheckCircle2, Zap } from "lucide-react";
 import {
   getAdminRaces,
   toggleRaceCancelled,
   addAdminRace,
   deleteAdminRace,
+  seedDefaultRaces,
   type AdminRace,
 } from "@/lib/api/admin";
 
@@ -20,6 +21,7 @@ const AdminRaces = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const [formData, setFormData] = useState({
     raceId: "",
@@ -89,6 +91,26 @@ const AdminRaces = () => {
       toast.error("Failed to delete race");
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const handleSeedRaces = async () => {
+    if (!confirm("This will populate all 24 F1 2026 races. Continue?")) return;
+
+    setSeeding(true);
+    try {
+      const success = await seedDefaultRaces();
+      if (success) {
+        await loadRaces();
+        toast.success("All 24 races seeded successfully");
+      } else {
+        toast.error("Failed to seed races");
+      }
+    } catch (error) {
+      const err = error as any;
+      toast.error(err?.message || "Failed to seed races");
+    } finally {
+      setSeeding(false);
     }
   };
 
@@ -319,8 +341,20 @@ const AdminRaces = () => {
       {/* Races List */}
       <div className="space-y-2">
         {races.length === 0 ? (
-          <div className="glass rounded-xl p-6 text-center">
-            <p className="text-muted-foreground">No races found</p>
+          <div className="glass rounded-xl p-6 text-center space-y-4">
+            <div className="space-y-2">
+              <p className="text-muted-foreground">No races found</p>
+              <p className="text-xs text-muted-foreground/70">Seed the database with the 24 F1 2026 races to get started</p>
+            </div>
+            <Button
+              onClick={handleSeedRaces}
+              disabled={seeding}
+              className="gap-2"
+            >
+              {seeding && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Zap className="h-4 w-4" />
+              Seed 24 F1 2026 Races
+            </Button>
           </div>
         ) : (
           races.map((race) => (

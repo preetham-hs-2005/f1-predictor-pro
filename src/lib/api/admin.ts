@@ -465,3 +465,19 @@ export async function deleteAdminRace(raceId: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Seed database with default races
+ */
+export async function seedDefaultRaces(): Promise<boolean> {
+  try {
+    const response = await client.request<{ success: boolean; message: string }>(
+      "/api/admin/races/seed/default",
+      { method: "POST" }
+    );
+    return response.success;
+  } catch (error) {
+    console.error("Failed to seed races:", error);
+    throw error;
+  }
+}
