@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Prediction } from "../models/Prediction.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { getDB } from "../utils/db.js";
 
 const router = Router();
 
@@ -119,6 +120,45 @@ router.get("/public/:userId", authMiddleware, async (req: Request, res: Response
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch public predictions";
     console.error("Fetch public predictions error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+// GET /api/predictions/scores/:userId
+// Get scores for a specific user's predictions (shows which predictions earned points)
+router.get("/scores/:userId", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const db = getDB();
+    const scoresCollection = db.collection("scores");
+
+    const scores = await scoresCollection
+      .find({ userId })
+      .toArray();
+
+    const formattedScores = scores.map((score: any) => ({
+      id: score._id.toString(),
+      userId: score.userId,
+      raceId: score.raceId,
+      type: score.type,
+      p1Points: score.p1Points || 0,
+      p2Points: score.p2Points || 0,
+      p3Points: score.p3Points || 0,
+      polePoints: score.polePoints || 0,
+      podiumBonusPoints: score.podiumBonusPoints || 0,
+      constructorPoints: score.constructorPoints || 0,
+      unexpectedPoints: score.unexpectedPoints || 0,
+      total: score.total || 0,
+      createdAt: score.createdAt,
+    }));
+
+    res.json({
+      success: true,
+      data: formattedScores,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch user scores";
+    console.error("Fetch user scores error:", message);
     res.status(500).json({ success: false, error: message });
   }
 });

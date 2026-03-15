@@ -48,6 +48,22 @@ export interface PredictionResponse extends ApiResponse<Prediction> {
   data?: Prediction;
 }
 
+export interface UserScore {
+  id: string;
+  userId: string;
+  raceId: string;
+  type: "sprint" | "race";
+  p1Points: number;
+  p2Points: number;
+  p3Points: number;
+  polePoints: number;
+  podiumBonusPoints: number;
+  constructorPoints: number;
+  unexpectedPoints: number;
+  total: number;
+  createdAt?: string | Date;
+}
+
 /**
  * Submit a new prediction
  */
@@ -127,4 +143,19 @@ export async function deletePrediction(raceId: string, type: "sprint" | "race" =
   if (!response.success) {
     throw new Error(response.error || "Failed to delete prediction");
   }
+}
+
+/**
+ * Get scores for a specific user (shows which predictions earned points)
+ */
+export async function getUserScores(userId: string): Promise<UserScore[]> {
+  const response = await apiClient.get<ApiResponse<UserScore[]>>(
+    `/api/predictions/scores/${userId}`
+  );
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error || "Failed to fetch user scores");
+  }
+
+  return response.data;
 }
