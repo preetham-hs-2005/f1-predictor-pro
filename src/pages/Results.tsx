@@ -34,7 +34,7 @@ const Results = () => {
 
   const now = new Date();
   const completedRaces = raceCalendar
-    .filter(r => new Date(r.raceStartTime) < now)
+    .filter(r => !r.cancelled && new Date(r.raceStartTime) < now)
     .sort((a, b) => a.round - b.round);
     
   const [selectedRaceId, setSelectedRaceId] = useState<string>(
