@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import RaceCard from "@/components/dashboard/RaceCard";
 import { getUpcomingRacesFromServer } from "@/lib/api/races";
+import { getUpcomingRaces as getUpcomingRacesLocal } from "@/lib/data/raceCalendar";
 import { type RaceWeekend } from "@/lib/data/raceCalendar";
 import { Badge } from "@/components/ui/badge";
 import { Zap } from "lucide-react";
@@ -13,6 +14,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [upcoming, setUpcoming] = useState<RaceWeekend[]>([]);
   const [racesLoading, setRacesLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate("/login");
@@ -24,29 +26,45 @@ const Dashboard = () => {
 
   const loadRaces = async () => {
     setRacesLoading(true);
+    setError(null);
     try {
+      console.log("[Dashboard] Fetching races from server...");
       const serverRaces = await getUpcomingRacesFromServer();
-      // Convert ServerRace to RaceWeekend format
-      const converted: RaceWeekend[] = serverRaces.map((race) => ({
-        id: race.raceId,
-        raceName: race.raceName,
-        circuitName: race.circuitName,
-        country: "",
-        countryFlag: race.countryFlag,
-        round: race.round,
-        qualifyingStartTime: race.qualifyingStartTime,
-        raceStartTime: race.raceStartTime,
-        sprintWeekend: race.sprintWeekend,
-        sprintQualifyingStartTime: race.sprintQualifyingStartTime,
-        timeZone: race.timeZone,
-        isLocked: false,
-        isComplete: false,
-        cancelled: race.cancelled,
-        officialResults: null,
-      }));
-      setUpcoming(converted);
+      console.log("[Dashboard] Server races:", serverRaces);
+      
+      if (serverRaces.length === 0) {
+        console.log("[Dashboard] No races from server, falling back to local calendar");
+        // Fallback to local calendar if server returns empty
+        const localRaces = getUpcomingRacesLocal();
+        setUpcoming(localRaces);
+      } else {
+        // Convert ServerRace to RaceWeekend format
+        const converted: RaceWeekend[] = serverRaces.map((race) => ({
+          id: race.raceId,
+          raceName: race.raceName,
+          circuitName: race.circuitName,
+          country: "",
+          countryFlag: race.countryFlag,
+          round: race.round,
+          qualifyingStartTime: race.qualifyingStartTime,
+          raceStartTime: race.raceStartTime,
+          sprintWeekend: race.sprintWeekend,
+          sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+          timeZone: race.timeZone,
+          isLocked: false,
+          isComplete: false,
+          cancelled: race.cancelled,
+          officialResults: null,
+        }));
+        console.log("[Dashboard] Converted races:", converted);
+        setUpcoming(converted);
+      }
     } catch (error) {
-      console.error("Failed to load races:", error);
+      console.error("[Dashboard] Failed to load races:", error);
+      setError("Failed to load races");
+      // Fallback to local calendar on error
+      const localRaces = getUpcomingRacesLocal();
+      setUpcoming(localRaces);
     } finally {
       setRacesLoading(false);
     }

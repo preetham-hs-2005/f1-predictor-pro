@@ -24,12 +24,20 @@ export interface ServerRace {
  */
 export async function getAllRaces(): Promise<ServerRace[]> {
   try {
+    console.log("[API] Fetching races from /api/admin/races");
     const response = await client.request<{ success: boolean; data: ServerRace[] }>(
       "/api/admin/races"
     );
-    return response.data || [];
+    console.log("[API] Races response:", response);
+    
+    if (!response.data) {
+      console.warn("[API] No data in response");
+      return [];
+    }
+    
+    return response.data;
   } catch (error) {
-    console.error("Failed to fetch races from server:", error);
+    console.error("[API] Failed to fetch races from server:", error);
     return [];
   }
 }
@@ -40,12 +48,25 @@ export async function getAllRaces(): Promise<ServerRace[]> {
 export async function getUpcomingRacesFromServer(): Promise<ServerRace[]> {
   try {
     const races = await getAllRaces();
+    console.log("[API] All races:", races.length, races);
+    
     const now = new Date();
-    return races
-      .filter((r) => !r.cancelled && new Date(r.raceStartTime) > now)
+    console.log("[API] Current time:", now);
+    
+    const upcoming = races
+      .filter((r) => {
+        const raceTime = new Date(r.raceStartTime);
+        const isFuture = raceTime > now;
+        const notCancelled = !r.cancelled;
+        console.log(`[API] Race ${r.raceId}: future=${isFuture}, notCancelled=${notCancelled}, time=${raceTime}`);
+        return isFuture && notCancelled;
+      })
       .sort((a, b) => a.round - b.round);
+    
+    console.log("[API] Upcoming races:", upcoming.length);
+    return upcoming;
   } catch (error) {
-    console.error("Failed to get upcoming races:", error);
+    console.error("[API] Failed to get upcoming races:", error);
     return [];
   }
 }
@@ -58,7 +79,7 @@ export async function getRaceByIdFromServer(raceId: string): Promise<ServerRace 
     const races = await getAllRaces();
     return races.find((r) => r.raceId === raceId) || null;
   } catch (error) {
-    console.error("Failed to get race by ID:", error);
+    console.error("[API] Failed to get race by ID:", error);
     return null;
   }
 }
