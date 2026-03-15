@@ -382,3 +382,86 @@ export async function clearDatabase(): Promise<boolean> {
     throw error;
   }
 }
+
+export interface AdminRace {
+  id: string;
+  raceId: string;
+  raceName: string;
+  round: number;
+  countryFlag: string;
+  circuitName: string;
+  qualifyingStartTime: string;
+  raceStartTime: string;
+  timeZone: string;
+  sprintWeekend: boolean;
+  sprintQualifyingStartTime?: string;
+  cancelled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Get all races
+ */
+export async function getAdminRaces(): Promise<AdminRace[]> {
+  try {
+    const response = await client.request<{ success: boolean; data: AdminRace[] }>(
+      "/api/admin/races"
+    );
+    return response.data || [];
+  } catch (error) {
+    console.error("Failed to fetch races:", error);
+    return [];
+  }
+}
+
+/**
+ * Toggle race cancelled status
+ */
+export async function toggleRaceCancelled(raceId: string): Promise<boolean> {
+  try {
+    const response = await client.request<{ success: boolean; data: AdminRace }>(
+      `/api/admin/races/${raceId}/cancel`,
+      { method: "PATCH" }
+    );
+    return response.success;
+  } catch (error) {
+    console.error("Failed to toggle race cancelled status:", error);
+    return false;
+  }
+}
+
+/**
+ * Add a new race
+ */
+export async function addAdminRace(race: Omit<AdminRace, "id" | "createdAt" | "updatedAt">): Promise<AdminRace | null> {
+  try {
+    const response = await client.request<{ success: boolean; data: AdminRace }>(
+      "/api/admin/races",
+      {
+        method: "POST",
+        body: JSON.stringify(race),
+      }
+    );
+    return response.data || null;
+  } catch (error) {
+    console.error("Failed to add race:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a race
+ */
+export async function deleteAdminRace(raceId: string): Promise<boolean> {
+  try {
+    const response = await client.request<{ success: boolean }>(
+      `/api/admin/races/${raceId}`,
+      { method: "DELETE" }
+    );
+    return response.success;
+  } catch (error) {
+    console.error("Failed to delete race:", error);
+    return false;
+  }
+}

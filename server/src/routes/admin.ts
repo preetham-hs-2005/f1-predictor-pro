@@ -1161,4 +1161,141 @@ router.delete("/data/clear", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/admin/races
+ * Get all races with their current status
+ */
+router.get("/races", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const racesCollection = db.collection("races");
+    
+    const races = await racesCollection.find({}).sort({ round: 1 }).toArray();
+    
+    res.json({
+      success: true,
+      data: races.map((r) => ({
+        id: r._id.toString(),
+        ...r,
+      })),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch races";
+    console.error("Admin get races error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+/**
+ * PATCH /api/admin/races/:raceId/cancel
+ * Toggle cancelled status for a race
+ */
+router.patch("/races/:raceId/cancel", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const racesCollection = db.collection("races");
+    
+    const race = await racesCollection.findOne({ raceId: req.params.raceId });
+    
+    if (!race) {
+      return res.status(404).json({ success: false, error: "Race not found" });
+    }
+    
+    const updated = await racesCollection.findOneAndUpdate(
+      { raceId: req.params.raceId },
+      { $set: { cancelled: !race.cancelled, updatedAt: new Date() } },
+      { returnDocument: "after" }
+    );
+    
+    if (!updated || !updated.value) {
+      return res.status(404).json({ success: false, error: "Race not found" });
+    }
+    
+    res.json({
+      success: true,
+      data: updated.value,
+      message: `Race ${updated.value.cancelled ? "cancelled" : "uncancelled"} successfully`,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update race";
+    console.error("Admin cancel race error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+/**
+ * POST /api/admin/races
+ * Add a new race
+ */
+router.post("/races", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const racesCollection = db.collection("races");
+    
+    const { raceId, raceName, round, countryFlag, circuitName, qualifyingStartTime, raceStartTime, timeZone, sprintWeekend, sprintQualifyingStartTime } = req.body;
+    
+    // Validate required fields
+    if (!raceId || !raceName || !round || !qualifyingStartTime || !raceStartTime) {
+      return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
+    
+    // Check if race already exists
+    const existing = await racesCollection.findOne({ raceId });
+    if (existing) {
+      return res.status(400).json({ success: false, error: "Race with this ID already exists" });
+    }
+    
+    const newRace = {
+      raceId,
+      raceName,
+      round,
+      countryFlag,
+      circuitName,
+      qualifyingStartTime,
+      raceStartTime,
+      timeZone: timeZone || "UTC",
+      sprintWeekend: sprintWeekend || false,
+      sprintQualifyingStartTime: sprintQualifyingStartTime || null,
+      cancelled: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    const result = await racesCollection.insertOne(newRace);
+    
+    res.json({
+      success: true,
+      data: { _id: result.insertedId, ...newRace },
+      message: "Race added successfully",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to add race";
+    console.error("Admin add race error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+/**
+ * DELETE /api/admin/races/:raceId
+ * Delete a race
+ */
+router.delete("/races/:raceId", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const racesCollection = db.collection("races");
+    
+    const result = await racesCollection.deleteOne({ raceId: req.params.raceId });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, error: "Race not found" });
+    }
+    
+    res.json({ success: true, message: "Race deleted successfully" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to delete race";
+    console.error("Admin delete race error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
 export default router;

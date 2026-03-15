@@ -9,7 +9,8 @@ import AdminPredictions from "@/components/admin/AdminPredictions";
 import AdminUsersAdvanced from "@/components/admin/AdminUsersAdvanced";
 import AdminDataManagement from "@/components/admin/AdminDataManagement";
 import AdminDrivers from "@/components/admin/AdminDrivers";
-import { Shield, ClipboardList, Users, Trophy, BarChart3, Settings, Database, UsersRound } from "lucide-react";
+import AdminRaces from "@/components/admin/AdminRaces";
+import { Shield, ClipboardList, Users, Trophy, BarChart3, Settings, Database, UsersRound, Calendar } from "lucide-react";
 
 const Admin = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -38,10 +39,14 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="animate-slide-up">
-          <TabsList className="w-full grid grid-cols-3 md:grid-cols-6 mb-6 h-auto p-1">
+          <TabsList className="w-full grid grid-cols-3 md:grid-cols-7 mb-6 h-auto p-1">
             <TabsTrigger value="dashboard" className="gap-1 text-xs md:text-sm">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden min-[640px]:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="races" className="gap-1 text-xs md:text-sm">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden min-[640px]:inline">Races</span>
             </TabsTrigger>
             <TabsTrigger value="results" className="gap-1 text-xs md:text-sm">
               <Trophy className="h-4 w-4" />
@@ -71,6 +76,9 @@ const Admin = () => {
 
           <TabsContent value="dashboard">
             <AdminDashboard />
+          </TabsContent>
+          <TabsContent value="races">
+            <AdminRaces />
           </TabsContent>
           <TabsContent value="results">
             <AdminResults />

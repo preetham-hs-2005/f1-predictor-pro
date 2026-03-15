@@ -8,7 +8,7 @@ import {
   isSprintLocked,
 } from "@/lib/data/raceCalendar";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Lock } from "lucide-react";
+import { Zap, Lock, X } from "lucide-react";
 import CountdownTimer from "@/components/dashboard/CountdownTimer";
 import PredictionForm from "@/components/prediction/PredictionForm";
 
@@ -113,7 +113,12 @@ const Predict = () => {
                 Sprint · 0.5× Points
               </Badge>
             )}
-            {locked ? (
+            {race.cancelled ? (
+              <Badge className="bg-destructive/20 text-destructive gap-1">
+                <X className="h-3 w-3" />
+                Race Cancelled
+              </Badge>
+            ) : locked ? (
               <Badge className="bg-primary/20 text-primary gap-1">
                 <Lock className="h-3 w-3" />
                 Predictions Locked
@@ -130,7 +135,13 @@ const Predict = () => {
           </div>
         </div>
 
-        <PredictionForm race={race} type={predictionType} locked={locked} />
+        {race.cancelled ? (
+          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-center">
+            <p className="text-destructive font-medium">This race has been cancelled. Predictions are not available.</p>
+          </div>
+        ) : (
+          <PredictionForm race={race} type={predictionType} locked={locked} />
+        )}
       </main>
     </div>
   );

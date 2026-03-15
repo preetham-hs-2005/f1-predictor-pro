@@ -7,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CountdownTimer from "./CountdownTimer";
-import { Zap, Lock, CheckCircle2, Timer } from "lucide-react";
+import { Zap, Lock, CheckCircle2, Timer, X } from "lucide-react";
 
 interface RaceCardProps {
   race: RaceWeekend;
@@ -55,6 +55,12 @@ const RaceCard = ({ race, featured = false }: RaceCardProps) => {
   }
 
   const getStatus = () => {
+    if (race.cancelled)
+      return {
+        label: "Cancelled",
+        color: "bg-destructive/20 text-destructive",
+        icon: X,
+      };
     if (race.isComplete)
       return {
         label: "Completed",
@@ -154,7 +160,7 @@ const RaceCard = ({ race, featured = false }: RaceCardProps) => {
         </div>
 
         {/* Prediction buttons */}
-        {!race.isComplete && (
+        {!race.isComplete && !race.cancelled && (
           <div className="flex gap-2 mt-4">
             {/* Sprint prediction button for sprint weekends */}
             {race.sprintWeekend && !sprintLocked && (
