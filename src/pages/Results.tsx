@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
-import { Loader, AlertCircle } from "lucide-react";
+import { Loader, AlertCircle, X } from "lucide-react";
 import { raceCalendar } from "@/lib/data/raceCalendar";
 import { apiClient } from "@/lib/api/client";
 import { useDrivers } from "@/hooks/useDrivers";
+import { Badge } from "@/components/ui/badge";
 
 interface RaceResult {
   id: string;
@@ -34,7 +35,7 @@ const Results = () => {
 
   const now = new Date();
   const completedRaces = raceCalendar
-    .filter(r => !r.cancelled && new Date(r.raceStartTime) < now)
+    .filter(r => new Date(r.raceStartTime) < now)
     .sort((a, b) => a.round - b.round);
     
   const [selectedRaceId, setSelectedRaceId] = useState<string>(
@@ -108,6 +109,12 @@ const Results = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{race.countryFlag}</span>
                       <span className="truncate">{race.raceName}</span>
+                      {race.cancelled && (
+                        <Badge variant="destructive" className="ml-auto text-xs gap-1 shrink-0">
+                          <X className="h-3 w-3" />
+                          Cancelled
+                        </Badge>
+                      )}
                     </div>
                   </button>
                 ))}
@@ -120,6 +127,12 @@ const Results = () => {
                 <div className="glass rounded-xl p-12 flex flex-col items-center justify-center min-h-[400px]">
                   <Loader className="h-8 w-8 animate-spin text-primary mb-4" />
                   <p className="text-muted-foreground">Loading official results...</p>
+                </div>
+              ) : raceCalendar.find(r => r.id === selectedRaceId)?.cancelled ? (
+                <div className="glass rounded-xl p-12 text-center min-h-[400px] flex flex-col items-center justify-center border border-destructive/20 bg-destructive/5">
+                  <X className="h-12 w-12 text-destructive mb-4 opacity-50" />
+                  <h3 className="f1-heading text-2xl text-destructive mb-2">Race Cancelled</h3>
+                  <p className="text-muted-foreground">This race was cancelled. No official results are available.</p>
                 </div>
               ) : error ? (
                 <div className="glass rounded-xl p-8 border border-destructive/20 bg-destructive/5 flex items-start gap-4">
