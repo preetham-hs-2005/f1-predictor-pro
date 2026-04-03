@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
+import { Crown, Loader, Medal, TimerReset } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+
 import Navbar from "@/components/layout/Navbar";
-import { TrendingUp, TrendingDown, Minus, Loader } from "lucide-react";
-import { getLeaderboard } from "@/lib/api/leaderboard";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 import { UserPredictionsDialog } from "@/components/leaderboard/UserPredictionsDialog";
+import { getLeaderboard } from "@/lib/api/leaderboard";
 
 interface LeaderboardEntry {
   rank: number;
@@ -27,10 +31,10 @@ const getMedalEmoji = (rank: number) => {
 };
 
 const getRowStyle = (rank: number) => {
-  if (rank === 1) return "bg-gradient-to-r from-[hsl(var(--f1-gold))]/10 to-transparent border-l-2 border-l-f1-gold";
-  if (rank === 2) return "bg-gradient-to-r from-[hsl(var(--f1-silver))]/5 to-transparent border-l-2 border-l-f1-silver";
-  if (rank === 3) return "bg-gradient-to-r from-[hsl(var(--f1-bronze))]/10 to-transparent border-l-2 border-l-f1-bronze";
-  return "border-l-2 border-l-transparent";
+  if (rank === 1) return "border-f1-gold/20 bg-[linear-gradient(90deg,rgba(255,209,102,0.13),transparent)]";
+  if (rank === 2) return "border-white/10 bg-[linear-gradient(90deg,rgba(255,255,255,0.08),transparent)]";
+  if (rank === 3) return "border-f1-bronze/20 bg-[linear-gradient(90deg,rgba(214,136,76,0.14),transparent)]";
+  return "border-white/5 bg-white/[0.02]";
 };
 
 const Leaderboard = () => {
@@ -42,8 +46,8 @@ const Leaderboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authIsLoading) return; // Wait for authentication check
-    
+    if (authIsLoading) return;
+
     if (!isAuthenticated) {
       navigate("/login");
       return;
@@ -58,97 +62,123 @@ const Leaderboard = () => {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load leaderboard";
         setError(message);
-        console.error("Leaderboard error:", err);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchLeaderboard();
-    // Refetch every 30 seconds
     const interval = setInterval(fetchLeaderboard, 30000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, authIsLoading]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell>
       <Navbar />
-      <main className="container pt-24 pb-12">
-        <div className="mb-8 animate-slide-up">
-          <h1 className="f1-heading text-3xl mb-2">Championship Standings</h1>
-          <p className="text-muted-foreground text-sm">Season 2026 leaderboard</p>
-        </div>
+      <main className="container pb-12 pt-28 md:pt-32">
+        <PageHeader
+          eyebrow="Standings"
+          title="Championship leaderboard"
+          description="A cleaner race table for season-long bragging rights, with prediction details still one click away."
+          badge="Auto-refresh"
+          stats={[
+            { label: "Drivers", value: `${leaderboard.length}` },
+            { label: "Top score", value: leaderboard[0] ? `${leaderboard[0].totalPoints} pts` : "TBD" },
+            { label: "Podium locks", value: `${leaderboard.reduce((sum, entry) => sum + entry.exactPodiums, 0)}` },
+            { label: "Refresh", value: "30 sec" },
+          ]}
+        />
 
-        {authIsLoading || isLoading ? (
-          <div className="glass rounded-xl overflow-hidden animate-slide-up p-12 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <Loader className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">Loading leaderboard...</p>
-            </div>
+        <section className="mt-8 grid gap-4 lg:grid-cols-3">
+          <div className="section-card">
+            <p className="page-eyebrow">Title fight</p>
+            <p className="mt-3 flex items-center gap-3 font-heading text-2xl text-white">
+              <Crown className="h-6 w-6 text-f1-gold" />
+              {leaderboard[0]?.username || leaderboard[0]?.name || "Waiting on the first leader"}
+            </p>
           </div>
-        ) : error ? (
-          <div className="glass rounded-xl overflow-hidden animate-slide-up p-6 border border-destructive/20 bg-destructive/5">
-            <p className="text-destructive font-semibold mb-2">Error Loading Leaderboard</p>
-            <p className="text-sm text-muted-foreground">{error}</p>
+          <div className="section-card">
+            <p className="page-eyebrow">Total winner picks</p>
+            <p className="mt-3 flex items-center gap-3 font-heading text-2xl text-white">
+              <Medal className="h-6 w-6 text-primary" />
+              {leaderboard.reduce((sum, entry) => sum + entry.correctWinners, 0)}
+            </p>
           </div>
-        ) : leaderboard.length === 0 ? (
-          <div className="glass rounded-xl overflow-hidden animate-slide-up p-12 text-center">
-            <p className="text-muted-foreground">No predictions have been submitted yet</p>
+          <div className="section-card">
+            <p className="page-eyebrow">Sync cadence</p>
+            <p className="mt-3 flex items-center gap-3 font-heading text-2xl text-white">
+              <TimerReset className="h-6 w-6 text-cyan-300" />
+              Every 30 seconds
+            </p>
           </div>
-        ) : (
-          <div className="glass rounded-xl overflow-hidden animate-slide-up">
-            {/* Header */}
-            <div className="grid grid-cols-[60px_1fr_80px] md:grid-cols-[60px_1fr_100px_100px_100px_100px] gap-2 px-4 py-3 border-b border-border/50 text-xs f1-heading text-muted-foreground">
-              <span>Pos</span>
-              <span>Driver</span>
-              <span className="text-right">Points</span>
-              <span className="text-right hidden md:block">Correct P1</span>
-              <span className="text-right hidden md:block">Exact Pods</span>
-              <span className="text-right hidden md:block">Predictions</span>
-            </div>
+        </section>
 
-            {/* Rows */}
-            {leaderboard.map((entry) => (
-              <div
-                key={entry.userId}
-                className={`grid grid-cols-[60px_1fr_80px] md:grid-cols-[60px_1fr_100px_100px_100px_100px] gap-2 px-4 py-3.5 items-center transition-colors hover:bg-accent/30 ${getRowStyle(
-                  entry.rank
-                )}`}
-              >
-                <span className="text-sm font-bold">
-                  {getMedalEmoji(entry.rank) || entry.rank}
-                </span>
-                <div 
-                  className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors flex flex-col underline-offset-4 hover:underline"
-                  onClick={() => setSelectedUser(entry)}
-                  title="Click to view predictions"
-                >
-                  <div className="truncate">{entry.username || entry.name}</div>
-                </div>
-                <span className="text-right text-sm font-bold tabular-nums">
-                  {entry.totalPoints}
-                </span>
-                <span className="text-right text-sm text-muted-foreground tabular-nums hidden md:block">
-                  {entry.correctWinners}
-                </span>
-                <span className="text-right text-sm text-muted-foreground tabular-nums hidden md:block">
-                  {entry.exactPodiums}
-                </span>
-                <span className="text-right text-sm text-muted-foreground tabular-nums hidden md:block">
-                  {entry.predictionsSubmitted}
-                </span>
+        <section className="section-card mt-8 overflow-hidden">
+          {authIsLoading || isLoading ? (
+            <div className="flex min-h-[360px] items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <Loader className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">Loading leaderboard...</p>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ) : error ? (
+            <div className="rounded-[1.5rem] border border-destructive/20 bg-destructive/10 p-6">
+              <p className="font-heading text-xl text-destructive">Error loading standings</p>
+              <p className="mt-2 text-sm text-white/65">{error}</p>
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <div className="flex min-h-[280px] items-center justify-center text-center">
+              <p className="text-white/60">No predictions have been submitted yet.</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-[72px_1fr_86px] gap-3 border-b border-white/10 px-4 py-4 text-[0.68rem] uppercase tracking-[0.24em] text-white/42 md:grid-cols-[72px_1fr_120px_120px_120px_120px]">
+                <span>Pos</span>
+                <span>Driver</span>
+                <span className="text-right">Points</span>
+                <span className="hidden text-right md:block">Correct P1</span>
+                <span className="hidden text-right md:block">Exact Pods</span>
+                <span className="hidden text-right md:block">Predictions</span>
+              </div>
+              <div className="mt-2 space-y-2">
+                {leaderboard.map((entry) => (
+                  <div
+                    key={entry.userId}
+                    className={`grid grid-cols-[72px_1fr_86px] gap-3 rounded-[1.25rem] border px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-white/15 md:grid-cols-[72px_1fr_120px_120px_120px_120px] ${getRowStyle(
+                      entry.rank,
+                    )}`}
+                  >
+                    <span className="flex items-center text-lg font-semibold text-white">
+                      {getMedalEmoji(entry.rank) || entry.rank}
+                    </span>
+                    <button
+                      type="button"
+                      className="min-w-0 text-left"
+                      onClick={() => setSelectedUser(entry)}
+                      title="Click to view predictions"
+                    >
+                      <p className="truncate font-heading text-lg text-white">{entry.username || entry.name}</p>
+                      <p className="mt-1 text-sm text-white/45">{entry.email}</p>
+                    </button>
+                    <span className="text-right text-lg font-semibold tabular-nums text-white">{entry.totalPoints}</span>
+                    <span className="hidden text-right text-sm tabular-nums text-white/60 md:block">{entry.correctWinners}</span>
+                    <span className="hidden text-right text-sm tabular-nums text-white/60 md:block">{entry.exactPodiums}</span>
+                    <span className="hidden text-right text-sm tabular-nums text-white/60 md:block">{entry.predictionsSubmitted}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Points are calculated from actual race results · Updated every 30 seconds
-        </p>
+        <div className="mt-5 flex items-center justify-center gap-2 text-xs uppercase tracking-[0.2em] text-white/38">
+          <Badge className="badge-signal">Live scoring</Badge>
+          Points are calculated from actual race results
+        </div>
 
         <UserPredictionsDialog user={selectedUser} onClose={() => setSelectedUser(null)} />
       </main>
-    </div>
+    </PageShell>
   );
 };
 

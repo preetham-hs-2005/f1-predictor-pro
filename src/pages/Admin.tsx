@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { BarChart3, Calendar, ClipboardList, Database, Settings, Shield, Trophy, Users, UsersRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+
 import Navbar from "@/components/layout/Navbar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import AdminDashboard from "@/components/admin/AdminDashboard";
-import AdminResults from "@/components/admin/AdminResults";
-import AdminPredictions from "@/components/admin/AdminPredictions";
-import AdminUsersAdvanced from "@/components/admin/AdminUsersAdvanced";
 import AdminDataManagement from "@/components/admin/AdminDataManagement";
 import AdminDrivers from "@/components/admin/AdminDrivers";
+import AdminPredictions from "@/components/admin/AdminPredictions";
 import AdminRaces from "@/components/admin/AdminRaces";
-import { Shield, ClipboardList, Users, Trophy, BarChart3, Settings, Database, UsersRound, Calendar } from "lucide-react";
+import AdminResults from "@/components/admin/AdminResults";
+import AdminUsersAdvanced from "@/components/admin/AdminUsersAdvanced";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Admin = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -25,52 +28,55 @@ const Admin = () => {
   if (isLoading || !user || user.role !== "admin") return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell>
       <Navbar />
-      <main className="container pt-24 pb-12 max-w-6xl">
-        <div className="mb-8 animate-slide-up">
-          <div className="flex items-center gap-3 mb-2">
-            <Shield className="h-6 w-6 text-primary" />
-            <h1 className="f1-heading text-3xl">Admin Control Center</h1>
-          </div>
-          <p className="text-muted-foreground text-sm">
-            Manage races, predictions, users, and system data with full admin powers
-          </p>
-        </div>
+      <main className="container max-w-7xl pb-12 pt-28 md:pt-32">
+        <PageHeader
+          eyebrow="Restricted area"
+          title="Admin control center"
+          description="Manage races, predictions, users, and system data inside the same upgraded design language while keeping the existing operational tooling."
+          badge="Administrator"
+          stats={[
+            { label: "Role", value: "Admin" },
+            { label: "User", value: user.name },
+            { label: "Modules", value: "8" },
+            { label: "Status", value: "Operational" },
+          ]}
+        />
 
-        <Tabs defaultValue="dashboard" className="animate-slide-up">
-          <TabsList className="w-full grid grid-cols-3 md:grid-cols-7 mb-6 h-auto p-1">
-            <TabsTrigger value="dashboard" className="gap-1 text-xs md:text-sm">
+        <Tabs defaultValue="dashboard" className="mt-8 animate-slide-up">
+          <TabsList className="grid w-full grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
+            <TabsTrigger value="dashboard" className="gap-2 text-xs md:text-sm">
               <BarChart3 className="h-4 w-4" />
-              <span className="hidden min-[640px]:inline">Dashboard</span>
+              Dashboard
             </TabsTrigger>
-            <TabsTrigger value="races" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="races" className="gap-2 text-xs md:text-sm">
               <Calendar className="h-4 w-4" />
-              <span className="hidden min-[640px]:inline">Races</span>
+              Races
             </TabsTrigger>
-            <TabsTrigger value="results" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="results" className="gap-2 text-xs md:text-sm">
               <Trophy className="h-4 w-4" />
-              <span className="hidden min-[640px]:inline">Results</span>
+              Results
             </TabsTrigger>
-            <TabsTrigger value="predictions" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="predictions" className="gap-2 text-xs md:text-sm">
               <ClipboardList className="h-4 w-4" />
-              <span className="hidden min-[640px]:inline">Predictions</span>
+              Predictions
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="users" className="gap-2 text-xs md:text-sm">
               <Users className="h-4 w-4" />
-              <span className="hidden min-[640px]:inline">Users</span>
+              Users
             </TabsTrigger>
-            <TabsTrigger value="drivers" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="drivers" className="gap-2 text-xs md:text-sm">
               <UsersRound className="h-4 w-4" />
-              <span className="hidden min-[640px]:inline">Drivers</span>
+              Drivers
             </TabsTrigger>
-            <TabsTrigger value="data" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="data" className="gap-2 text-xs md:text-sm">
               <Database className="h-4 w-4" />
-              <span className="hidden min-[640px]:inline">Data</span>
+              Data
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-1 text-xs md:text-sm">
+            <TabsTrigger value="settings" className="gap-2 text-xs md:text-sm">
               <Settings className="h-4 w-4" />
-              <span className="hidden min-[640px]:inline">Settings</span>
+              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -96,44 +102,33 @@ const Admin = () => {
             <AdminDataManagement />
           </TabsContent>
           <TabsContent value="settings">
-            <div className="glass rounded-xl p-6">
-              <h2 className="f1-heading text-base mb-4">Admin Settings</h2>
-              <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-background/30 border border-border/50">
-                  <h3 className="text-sm font-semibold mb-2">System Information</h3>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <p>💻 Current Role: <span className="text-foreground font-semibold">Administrator</span></p>
-                    <p>👤 User: <span className="text-foreground font-semibold">{user.name}</span></p>
-                    <p>📧 Email: <span className="text-foreground font-semibold">{user.email}</span></p>
-                    <p>📅 Last Login: <span className="text-foreground">Today</span></p>
-                  </div>
+            <div className="section-card">
+              <div className="flex items-center gap-3">
+                <Shield className="h-6 w-6 text-primary" />
+                <h2 className="font-heading text-2xl text-white">Admin settings</h2>
+              </div>
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                <div className="panel-subtle">
+                  <p className="page-eyebrow">Current role</p>
+                  <p className="mt-3 text-lg font-semibold text-white">Administrator</p>
+                  <p className="mt-1 text-sm text-white/55">{user.name}</p>
                 </div>
-
-                <div className="p-4 rounded-lg bg-background/30 border border-border/50">
-                  <h3 className="text-sm font-semibold mb-2">Quick Stats</h3>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <p>⚡ All systems operational</p>
-                    <p>✅ Database connected</p>
-                    <p>🔐 Security: Active</p>
-                  </div>
+                <div className="panel-subtle">
+                  <p className="page-eyebrow">Email</p>
+                  <p className="mt-3 text-lg font-semibold text-white">{user.email}</p>
+                  <p className="mt-1 text-sm text-white/55">Primary operator contact</p>
                 </div>
-
-                <div className="p-4 rounded-lg bg-blue-950/30 border border-blue-500/20">
-                  <h3 className="text-sm font-semibold mb-2 text-blue-400">Admin Tips</h3>
-                  <ul className="space-y-1 text-xs text-blue-300/80 list-disc pl-4">
-                    <li>Use Dashboard to monitor overall system health</li>
-                    <li>Enter race results to automatically score all predictions</li>
-                    <li>Advanced Users tab has search, filtering, and bulk export</li>
-                    <li>Regularly backup your data from the Data Management tab</li>
-                    <li>Only admins can modify user roles and delete accounts</li>
-                  </ul>
+                <div className="panel-subtle">
+                  <p className="page-eyebrow">System health</p>
+                  <p className="mt-3 text-lg font-semibold text-white">All systems operational</p>
+                  <p className="mt-1 text-sm text-white/55">Database, scoring, and security active</p>
                 </div>
               </div>
             </div>
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </PageShell>
   );
 };
 

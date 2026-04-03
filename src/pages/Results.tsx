@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { AlertCircle, Flag, Loader, ShieldCheck } from "lucide-react";
+
 import Navbar from "@/components/layout/Navbar";
-import { Loader, AlertCircle } from "lucide-react";
-import { raceCalendar } from "@/lib/data/raceCalendar";
-import { apiClient } from "@/lib/api/client";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 import { useDrivers } from "@/hooks/useDrivers";
+import { apiClient } from "@/lib/api/client";
+import { raceCalendar } from "@/lib/data/raceCalendar";
 
 interface RaceResult {
   id: string;
@@ -25,22 +29,22 @@ interface RaceResult {
 const Results = () => {
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const { drivers } = useDrivers();
-  
+
   const getDriverName = (id?: string) => {
     if (!id) return "TBC";
-    const driver = drivers.find(d => d.id === id);
+    const driver = drivers.find((d) => d.id === id);
     return driver ? driver.name : id;
   };
 
   const now = new Date();
   const completedRaces = raceCalendar
-    .filter(r => !r.cancelled && new Date(r.raceStartTime) < now)
+    .filter((r) => !r.cancelled && new Date(r.raceStartTime) < now)
     .sort((a, b) => a.round - b.round);
-    
+
   const [selectedRaceId, setSelectedRaceId] = useState<string>(
-    completedRaces.length > 0 ? completedRaces[completedRaces.length - 1].id : ""
+    completedRaces.length > 0 ? completedRaces[completedRaces.length - 1].id : "",
   );
-  
+
   const [results, setResults] = useState<RaceResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,136 +71,153 @@ const Results = () => {
     };
 
     fetchResults();
-  }, [selectedRaceId, isAuthenticated]);
+  }, [selectedRaceId, isAuthenticated, authIsLoading]);
 
-  const selectedRaceName = raceCalendar.find(r => r.id === selectedRaceId)?.raceName;
+  const selectedRaceName = raceCalendar.find((r) => r.id === selectedRaceId)?.raceName;
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell>
       <Navbar />
-      <main className="container pt-24 pb-12">
-        <div className="mb-8 animate-slide-up">
-          <h1 className="f1-heading text-3xl mb-2">Race Results</h1>
-          <p className="text-muted-foreground text-sm">Official results from completed races</p>
-        </div>
+      <main className="container pb-12 pt-28 md:pt-32">
+        <PageHeader
+          eyebrow="Official data"
+          title="Race results archive"
+          description="Browse completed weekends with a cleaner split between the event selector and the published official results."
+          badge="Verified"
+          stats={[
+            { label: "Completed races", value: `${completedRaces.length}` },
+            { label: "Selected event", value: selectedRaceName || "None" },
+            { label: "Official cards", value: `${results.length}` },
+            { label: "Season", value: "2026" },
+          ]}
+        />
 
         {authIsLoading ? (
-          <div className="glass rounded-xl p-12 flex flex-col items-center justify-center min-h-[400px] animate-slide-up">
-            <Loader className="h-8 w-8 animate-spin text-primary mb-4" />
+          <section className="section-card mt-8 flex min-h-[360px] flex-col items-center justify-center">
+            <Loader className="mb-4 h-8 w-8 animate-spin text-primary" />
             <p className="text-muted-foreground">Authenticating...</p>
-          </div>
+          </section>
         ) : completedRaces.length === 0 ? (
-          <div className="glass rounded-xl p-12 text-center animate-slide-up">
-            <p className="text-muted-foreground">No races have been completed yet this season.</p>
-          </div>
+          <section className="section-card mt-8 text-center">
+            <p className="font-heading text-2xl text-white">No completed races yet</p>
+            <p className="mt-3 text-sm text-white/60">Results will appear here once the season gets underway.</p>
+          </section>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 animate-slide-up">
-            {/* Sidebar / Race Selector */}
-            <div className="glass rounded-lg p-3 h-fit">
-                <h2 className="f1-heading text-sm font-bold mb-3 uppercase tracking-wide">Races</h2>
-              <div className="space-y-1.5">
+          <section className="mt-8 grid gap-4 xl:grid-cols-[300px_1fr]">
+            <aside className="section-card h-fit">
+              <p className="page-eyebrow">Race picker</p>
+              <h2 className="mt-2 font-heading text-2xl text-white">Completed weekends</h2>
+              <div className="mt-6 space-y-2">
                 {completedRaces.map((race) => (
                   <button
                     key={race.id}
                     onClick={() => setSelectedRaceId(race.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded text-xs transition-all ${
+                    className={`w-full rounded-[1.25rem] border px-4 py-4 text-left transition-all ${
                       selectedRaceId === race.id
-                        ? "bg-primary text-primary-foreground font-semibold"
-                        : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
+                        ? "border-primary/25 bg-primary/10 shadow-[0_18px_45px_rgba(255,107,62,0.18)]"
+                        : "border-white/8 bg-white/[0.03] hover:border-white/14 hover:bg-white/[0.05]"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span>{race.countryFlag}</span>
-                      <span className="truncate flex-1 text-xs">{race.raceName}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-2xl">
+                        {race.countryFlag}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-heading text-base text-white truncate">{race.raceName}</p>
+                        <p className="text-sm text-white/45">Round {race.round}</p>
+                      </div>
                     </div>
                   </button>
                 ))}
               </div>
-            </div>
+            </aside>
 
-            {/* Results Display */}
-            <div className="space-y-3 flex flex-col">
+            <div className="space-y-4">
               {isLoading ? (
-                <div className="glass rounded-xl p-12 flex flex-col items-center justify-center min-h-[400px]">
-                  <Loader className="h-8 w-8 animate-spin text-primary mb-4" />
+                <div className="section-card flex min-h-[360px] flex-col items-center justify-center">
+                  <Loader className="mb-4 h-8 w-8 animate-spin text-primary" />
                   <p className="text-muted-foreground">Loading official results...</p>
                 </div>
-              ) : raceCalendar.find(r => r.id === selectedRaceId)?.cancelled ? (
-                <div className="glass rounded-lg p-8 text-center min-h-[300px] flex flex-col items-center justify-center border border-destructive/20">
-                  <p className="text-destructive font-semibold text-sm">This race was cancelled.</p>
+              ) : raceCalendar.find((r) => r.id === selectedRaceId)?.cancelled ? (
+                <div className="section-card border border-destructive/20 bg-destructive/10 text-center">
+                  <p className="font-heading text-2xl text-destructive">This race was cancelled.</p>
                 </div>
               ) : error ? (
-                <div className="glass rounded-xl p-8 border border-destructive/20 bg-destructive/5 flex items-start gap-4">
-                  <AlertCircle className="h-6 w-6 text-destructive shrink-0" />
-                  <div>
-                    <h3 className="text-destructive font-semibold mb-1">Failed to Load</h3>
-                    <p className="text-muted-foreground text-sm">{error}</p>
+                <div className="section-card border border-destructive/20 bg-destructive/10">
+                  <div className="flex items-start gap-4">
+                    <AlertCircle className="h-6 w-6 shrink-0 text-destructive" />
+                    <div>
+                      <h3 className="font-heading text-xl text-destructive">Failed to load results</h3>
+                      <p className="mt-2 text-sm text-white/65">{error}</p>
+                    </div>
                   </div>
                 </div>
               ) : results.length === 0 ? (
-                <div className="glass rounded-xl p-12 text-center min-h-[400px] flex flex-col items-center justify-center border border-dashed border-border/50">
-                  <p className="text-muted-foreground">No official results published for {selectedRaceName} yet.</p>
+                <div className="section-card flex min-h-[320px] items-center justify-center text-center">
+                  <p className="text-white/60">No official results have been published for {selectedRaceName} yet.</p>
                 </div>
               ) : (
                 results.map((result) => (
-                  <div key={result.id} className="glass rounded-lg border border-border/50 overflow-hidden">
-                    {/* Header */}
-                    <div className="bg-primary/5 px-4 py-3 border-b border-border/50 flex items-center justify-between">
+                  <article key={result.id} className="section-card overflow-hidden">
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
                       <div>
-                        <h2 className="f1-heading text-base font-bold uppercase">{selectedRaceName}</h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">{result.type === "sprint" ? "⚡ Sprint" : "🏁 Grand Prix"}</p>
+                        <p className="page-eyebrow">{result.type === "sprint" ? "Sprint session" : "Grand Prix"}</p>
+                        <h2 className="mt-2 font-heading text-2xl text-white">{selectedRaceName}</h2>
                       </div>
                       {result.isOfficial && (
-                        <span className="bg-f1-gold/20 text-f1-gold text-xs px-2 py-1 rounded font-bold">
-                          ✓ OFFICIAL
-                        </span>
+                        <Badge className="rounded-full border border-emerald-400/20 bg-emerald-400/12 px-4 py-1.5 text-[0.7rem] uppercase tracking-[0.22em] text-emerald-300">
+                          <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
+                          Official
+                        </Badge>
                       )}
                     </div>
-                    
-                    {/* Content */}
-                    <div className="p-4 grid grid-cols-2 gap-4">
-                      {/* Podium */}
-                      <div>
-                        <p className="text-xs font-bold text-muted-foreground mb-2.5 uppercase tracking-wide">Podium</p>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">🥇</span>
-                            <span className="text-sm font-semibold text-f1-gold">{getDriverName(result.p1)}</span>
+
+                    <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                      <div className="panel-subtle">
+                        <p className="page-eyebrow">Podium</p>
+                        <div className="mt-4 grid gap-3">
+                          <div className="flex items-center gap-3 rounded-2xl border border-f1-gold/20 bg-f1-gold/10 px-4 py-3">
+                            <span className="text-2xl">🥇</span>
+                            <span className="font-semibold text-f1-gold">{getDriverName(result.p1)}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">🥈</span>
-                            <span className="text-sm font-semibold text-f1-silver">{getDriverName(result.p2)}</span>
+                          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3">
+                            <span className="text-2xl">🥈</span>
+                            <span className="font-semibold text-white/88">{getDriverName(result.p2)}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">🥉</span>
-                            <span className="text-sm font-semibold text-f1-bronze">{getDriverName(result.p3)}</span>
+                          <div className="flex items-center gap-3 rounded-2xl border border-f1-bronze/20 bg-f1-bronze/10 px-4 py-3">
+                            <span className="text-2xl">🥉</span>
+                            <span className="font-semibold text-f1-bronze">{getDriverName(result.p3)}</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Standouts */}
-                      <div>
-                        <p className="text-xs font-bold text-muted-foreground mb-2.5 uppercase tracking-wide">Standouts</p>
-                        <div className="space-y-2">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Pole</p>
-                            <p className="text-sm font-semibold">{getDriverName(result.pole)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Best Constructor</p>
-                            <p className="text-sm font-semibold text-f1-success">{result.bestConstructor || "TBC"}</p>
+                      <div className="grid gap-3">
+                        <div className="panel-subtle">
+                          <p className="page-eyebrow">Pole</p>
+                          <p className="mt-3 font-heading text-xl text-white">{getDriverName(result.pole)}</p>
+                        </div>
+                        <div className="panel-subtle">
+                          <p className="page-eyebrow">Best constructor</p>
+                          <p className="mt-3 font-heading text-xl text-white">{result.bestConstructor || "TBC"}</p>
+                        </div>
+                        <div className="panel-subtle">
+                          <p className="page-eyebrow">Race notes</p>
+                          <div className="mt-3 grid gap-2 text-sm text-white/65">
+                            <p className="flex items-center justify-between"><span>Safety cars</span><span>{result.safetyCars}</span></p>
+                            <p className="flex items-center justify-between"><span>Red flags</span><span>{result.redFlags}</span></p>
+                            <p className="flex items-center justify-between"><span>DNFs</span><span>{result.dnfCount}</span></p>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </article>
                 ))
               )}
             </div>
-          </div>
+          </section>
         )}
       </main>
-    </div>
+    </PageShell>
   );
 };
 

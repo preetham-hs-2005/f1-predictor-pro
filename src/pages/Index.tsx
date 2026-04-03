@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Clock3, MessageSquareText, Trophy } from "lucide-react";
+
 import { useAuth } from "@/contexts/AuthContext";
+import { BrandMark } from "@/components/layout/BrandMark";
+import { PageShell } from "@/components/layout/PageShell";
 import { Button } from "@/components/ui/button";
-import { Flag, Trophy, Timer, Zap } from "lucide-react";
 
 const Index = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -13,91 +16,89 @@ const Index = () => {
   }, [isLoading, isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-primary/5 rounded-full blur-[120px]" />
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-
-      {/* Decorative grid */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
-
-      <header className="relative z-10 container flex items-center justify-between h-16">
-        <div className="flex items-center gap-2">
-          <Flag className="h-5 w-5 text-primary" />
-          <span className="f1-heading text-lg">
-            <span className="text-gradient-f1">F1</span>{" "}
-            <span className="text-foreground">Predict</span>
-          </span>
-        </div>
-        <Link to="/login">
-          <Button variant="ghost" size="sm">
-            Sign In
-          </Button>
-        </Link>
-      </header>
-
-      <main className="relative z-10 flex-1 flex items-center justify-center">
-        <div className="text-center px-4 animate-slide-up">
-          <div className="mb-6">
-            <span className="text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
-              Season 2026
-            </span>
-          </div>
-
-          <h1 className="f1-heading text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-2 leading-[0.95]">
-            <span className="text-gradient-f1">F1</span>
-          </h1>
-          <h2 className="f1-heading text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-8 text-foreground leading-tight">
-            Prediction League
-          </h2>
-
-          <p className="text-muted-foreground text-base md:text-lg max-w-md mx-auto mb-10 leading-relaxed">
-            Predict podiums. Outsmart your friends.
-            <br />
-            Claim the championship.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
-            <Link to="/register">
-              <Button size="lg" className="min-w-[180px]">
-                Join the Grid
-              </Button>
-            </Link>
+    <PageShell>
+      <div className="container relative z-10 flex min-h-screen flex-col pb-16 pt-6">
+        <header className="flex items-center justify-between">
+          <BrandMark />
+          <div className="flex items-center gap-3">
             <Link to="/login">
-              <Button variant="outline" size="lg" className="min-w-[180px]">
+              <Button variant="ghost" size="sm">
                 Sign In
               </Button>
             </Link>
+            <Link to="/register">
+              <Button size="sm">Join Now</Button>
+            </Link>
           </div>
+        </header>
 
-          {/* Feature pills */}
-          <div className="flex flex-wrap justify-center gap-6 text-xs text-muted-foreground uppercase tracking-widest">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-3.5 w-3.5 text-f1-gold" />
-              <span>Leaderboards</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Timer className="h-3.5 w-3.5 text-primary" />
-              <span>Live Deadlines</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="h-3.5 w-3.5 text-f1-warning" />
-              <span>Sprint Scoring</span>
-            </div>
+        <main className="flex flex-1 items-center py-10">
+          <div className="mx-auto w-full max-w-6xl">
+            <section className="hero-panel overflow-hidden">
+              <div className="relative z-10">
+                <p className="page-eyebrow">Prediction League</p>
+                <h1 className="mt-4 max-w-4xl font-heading text-5xl leading-[0.95] text-white md:text-7xl">
+                  Predict every race.
+                  <span className="block text-gradient-f1">Own the season.</span>
+                </h1>
+                <p className="mt-6 max-w-2xl text-base leading-8 text-white/68 md:text-lg">
+                  F1 Predict gives your league a clean home for race picks, leaderboards, results, and discussions without the clutter.
+                </p>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Link to="/register">
+                    <Button size="lg" className="min-w-[220px]">
+                      Join the Grid
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link to="/login">
+                    <Button variant="outline" size="lg" className="min-w-[220px]">
+                      Sign In
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="mt-10 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="panel-subtle">
+                      <Clock3 className="h-5 w-5 text-primary" />
+                      <p className="mt-4 font-heading text-lg text-white">Lock timers</p>
+                      <p className="mt-2 text-sm leading-7 text-white/58">Never miss qualifying or race deadlines.</p>
+                    </div>
+                    <div className="panel-subtle">
+                      <Trophy className="h-5 w-5 text-primary" />
+                      <p className="mt-4 font-heading text-lg text-white">Leaderboard</p>
+                      <p className="mt-2 text-sm leading-7 text-white/58">Track points and season momentum live.</p>
+                    </div>
+                    <div className="panel-subtle">
+                      <MessageSquareText className="h-5 w-5 text-primary" />
+                      <p className="mt-4 font-heading text-lg text-white">Discussions</p>
+                      <p className="mt-2 text-sm leading-7 text-white/58">Keep the race-weekend talk going.</p>
+                    </div>
+                  </div>
+
+                  <div className="section-card bg-[linear-gradient(160deg,rgba(255,88,57,0.14),rgba(255,255,255,0.03))]">
+                    <p className="page-eyebrow">Why it works</p>
+                    <div className="mt-4 space-y-4">
+                      <div className="rounded-[1.25rem] border border-white/10 bg-black/10 px-4 py-4">
+                        <p className="font-heading text-xl text-white">Simple before login</p>
+                        <p className="mt-2 text-sm leading-7 text-white/60">A focused landing page that explains the product fast instead of stacking too many promo blocks.</p>
+                      </div>
+                      <div className="rounded-[1.25rem] border border-white/10 bg-black/10 px-4 py-4">
+                        <p className="font-heading text-xl text-white">Built for your league</p>
+                        <p className="mt-2 text-sm leading-7 text-white/60">Predictions, standings, results, and community all stay connected under one identity.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[38%] bg-[radial-gradient(circle_at_center,rgba(255,79,50,0.18),transparent_70%)] lg:block" />
+            </section>
           </div>
-        </div>
-      </main>
-
-      <div className="racing-stripe" />
-    </div>
+        </main>
+      </div>
+    </PageShell>
   );
 };
 

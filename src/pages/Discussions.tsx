@@ -1,24 +1,21 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { MessageSquarePlus, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+
 import Navbar from "@/components/layout/Navbar";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
 import DiscussionForm from "@/components/discussions/DiscussionForm";
 import DiscussionsList from "@/components/discussions/DiscussionsList";
 import DiscussionThread from "@/components/discussions/DiscussionThread";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { createDiscussion } from "@/lib/api/discussions";
 
 const Discussions = () => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedDiscussionId, setSelectedDiscussionId] = useState<string | null>(null);
@@ -68,52 +65,58 @@ const Discussions = () => {
 
   if (selectedDiscussionId) {
     return (
-      <div className="min-h-screen bg-black">
+      <PageShell>
         <Navbar />
-        <div className="mt-16 h-[calc(100vh-64px)] max-w-7xl mx-auto">
-          <DiscussionThread
-            discussionId={selectedDiscussionId}
-            onBack={() => setSelectedDiscussionId(null)}
-          />
+        <div className="container mt-24 h-[calc(100vh-7.5rem)] pb-6 md:mt-28">
+          <DiscussionThread discussionId={selectedDiscussionId} onBack={() => setSelectedDiscussionId(null)} />
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell>
       <Navbar />
-      <main className="container pt-24 pb-12">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="f1-heading text-3xl mb-2">Discussions</h1>
-            <p className="text-muted-foreground text-sm">
-              Join the conversation about F1 predictions and races
+      <main className="container pb-12 pt-28 md:pt-32">
+        <PageHeader
+          eyebrow="Community"
+          title="Discussions and polls"
+          description="A more social race room for league banter, technical takes, and all the prediction-side conversation that keeps the season lively."
+          actions={
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <MessageSquarePlus className="h-4 w-4" />
+                  New Discussion
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="font-heading text-2xl">Create a new discussion</DialogTitle>
+                </DialogHeader>
+                <DiscussionForm onSubmit={handleCreateDiscussion} isLoading={isCreating} />
+              </DialogContent>
+            </Dialog>
+          }
+          stats={[
+            { label: "Mode", value: "Threads" },
+            { label: "Extras", value: "Polls" },
+            { label: "Search", value: "Enabled" },
+            { label: "Energy", value: "High" },
+          ]}
+        />
+
+        <section className="section-card mt-8">
+          <div className="mb-6 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
+            <p className="flex items-center gap-2 text-sm text-white/72">
+              <Sparkles className="h-4 w-4 text-primary" />
+              This page keeps all existing features, but now reads like a premium social hub instead of a plain forum list.
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Discussion
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create a New Discussion</DialogTitle>
-              </DialogHeader>
-              <DiscussionForm
-                onSubmit={handleCreateDiscussion}
-                isLoading={isCreating}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <DiscussionsList onSelectDiscussion={setSelectedDiscussionId} />
+          <DiscussionsList onSelectDiscussion={setSelectedDiscussionId} />
+        </section>
       </main>
-    </div>
+    </PageShell>
   );
 };
 

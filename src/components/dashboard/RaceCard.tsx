@@ -1,13 +1,10 @@
 import { Link } from "react-router-dom";
-import {
-  type RaceWeekend,
-  isRaceLocked,
-  isSprintLocked,
-} from "@/lib/data/raceCalendar";
+import { CheckCircle2, Lock, Timer, Zap, X } from "lucide-react";
+
+import { type RaceWeekend, isRaceLocked, isSprintLocked } from "@/lib/data/raceCalendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CountdownTimer from "./CountdownTimer";
-import { Zap, Lock, CheckCircle2, Timer, X } from "lucide-react";
 
 interface RaceCardProps {
   race: RaceWeekend;
@@ -16,38 +13,37 @@ interface RaceCardProps {
 
 const formatSessionTime = (dateStr: string, timeZone: string) => {
   const d = new Date(dateStr);
-  
+
   const local = d.toLocaleTimeString("en-US", {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
     timeZone,
   });
-  
+
   const ist = d.toLocaleTimeString("en-US", {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
     timeZone: "Asia/Kolkata",
   });
-  
+
   return { local, ist };
 };
 
 const RaceCard = ({ race, featured = false }: RaceCardProps) => {
   const raceLocked = isRaceLocked(race);
   const sprintLocked = race.sprintWeekend ? isSprintLocked(race) : true;
-  
+
   const now = new Date();
   const isBeforeQuali = now < new Date(race.qualifyingStartTime);
   const isBeforeRace = now < new Date(race.raceStartTime);
 
-  // Determine which session is next
   let nextSessionName = "Race";
   let nextSessionDate = race.raceStartTime;
-  
+
   if (isBeforeQuali) {
-    nextSessionName = "Quali";
+    nextSessionName = "Qualifying";
     nextSessionDate = race.qualifyingStartTime;
   } else if (isBeforeRace) {
     nextSessionName = "Race";
@@ -55,27 +51,30 @@ const RaceCard = ({ race, featured = false }: RaceCardProps) => {
   }
 
   const getStatus = () => {
-    if (race.cancelled)
+    if (race.cancelled) {
       return {
         label: "Cancelled",
-        color: "bg-destructive/20 text-destructive",
+        className: "bg-destructive/15 text-destructive border-destructive/20",
         icon: X,
       };
-    if (race.isComplete)
+    }
+    if (race.isComplete) {
       return {
         label: "Completed",
-        color: "bg-muted text-muted-foreground",
+        className: "bg-white/[0.08] text-white/70 border-white/10",
         icon: CheckCircle2,
       };
-    if (raceLocked)
+    }
+    if (raceLocked) {
       return {
         label: "Locked",
-        color: "bg-primary/20 text-primary",
+        className: "bg-primary/15 text-primary border-primary/20",
         icon: Lock,
       };
+    }
     return {
       label: "Open",
-      color: "bg-f1-success/20 text-f1-success",
+      className: "bg-emerald-400/12 text-emerald-300 border-emerald-400/20",
       icon: Timer,
     };
   };
@@ -84,144 +83,98 @@ const RaceCard = ({ race, featured = false }: RaceCardProps) => {
 
   return (
     <div
-      className={`glass rounded-xl overflow-hidden transition-all duration-300 hover:border-primary/30 ${
-        featured ? "hover:glow-red" : ""
-      }`}
+      className={[
+        "section-card h-full overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-white/15",
+        featured ? "glow-red" : "",
+      ].join(" ")}
     >
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{race.countryFlag}</span>
+      <div className="flex h-full flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-3xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              {race.countryFlag}
+            </div>
             <div>
-              <h3
-                className={`f1-heading ${featured ? "text-base" : "text-sm"}`}
-              >
-                {race.raceName}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {race.circuitName}
-              </p>
+              <p className="text-[0.68rem] uppercase tracking-[0.28em] text-white/40">Round {race.round}</p>
+              <h3 className={`font-heading ${featured ? "text-xl" : "text-lg"} mt-1 text-white`}>{race.raceName}</h3>
+              <p className="text-sm text-white/55">{race.circuitName}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end gap-2">
+            <Badge className={`rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.22em] ${status.className}`}>
+              <status.icon className="mr-1.5 h-3 w-3" />
+              {status.label}
+            </Badge>
             {race.sprintWeekend && (
-              <Badge
-                variant="outline"
-                className="border-f1-warning/50 text-f1-warning text-xs gap-1"
-              >
-                <Zap className="h-3 w-3" />
+              <Badge variant="outline" className="rounded-full border-f1-warning/30 bg-f1-warning/10 px-3 py-1 text-[0.65rem] uppercase tracking-[0.22em] text-f1-warning">
+                <Zap className="mr-1.5 h-3 w-3" />
                 Sprint
               </Badge>
             )}
           </div>
         </div>
 
-        {/* Schedule Information */}
-        <div className="mt-4 space-y-2 p-3 bg-black/20 rounded-lg border border-white/10 text-xs">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-muted-foreground">Quali:</span>
-            <div className="text-right flex items-center gap-1.5">
-              <span>{formatSessionTime(race.qualifyingStartTime, race.timeZone).local}</span>
-              <span className="text-muted-foreground/30">|</span>
-              <span className="text-f1-orange font-medium">{formatSessionTime(race.qualifyingStartTime, race.timeZone).ist} IST</span>
-            </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="panel-subtle">
+            <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Qualifying</p>
+            <p className="mt-3 text-sm text-white/85">{formatSessionTime(race.qualifyingStartTime, race.timeZone).local}</p>
+            <p className="mt-1 text-xs text-primary">{formatSessionTime(race.qualifyingStartTime, race.timeZone).ist} IST</p>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-muted-foreground">Race:</span>
-            <div className="text-right flex items-center gap-1.5">
-              <span>{formatSessionTime(race.raceStartTime, race.timeZone).local}</span>
-              <span className="text-muted-foreground/30">|</span>
-              <span className="text-f1-orange font-medium">{formatSessionTime(race.raceStartTime, race.timeZone).ist} IST</span>
-            </div>
+          <div className="panel-subtle">
+            <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Race</p>
+            <p className="mt-3 text-sm text-white/85">{formatSessionTime(race.raceStartTime, race.timeZone).local}</p>
+            <p className="mt-1 text-xs text-primary">{formatSessionTime(race.raceStartTime, race.timeZone).ist} IST</p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4">
+        <div className="mt-6 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Prediction Status</p>
-            <Badge className={status.color + " text-[10px]"}>
-              <status.icon className="h-3 w-3 mr-1" />
-              {status.label}
-            </Badge>
+            <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Next window</p>
+            <p className="mt-2 text-sm text-white/70">{nextSessionName}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted-foreground mb-1">
-              {nextSessionName} in
-            </p>
+            <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Countdown</p>
             {!race.isComplete && nextSessionDate ? (
-              <CountdownTimer
-                targetDate={nextSessionDate}
-                className="text-lg"
-              />
+              <CountdownTimer targetDate={nextSessionDate} className="mt-2 text-xl font-heading text-white" />
             ) : (
-              <span className="text-sm font-medium">Completed</span>
+              <span className="mt-2 block text-sm font-medium text-white/65">Completed</span>
             )}
           </div>
         </div>
 
-        {/* Prediction buttons */}
         {!race.isComplete && !race.cancelled && (
-          <div className="flex gap-2 mt-4">
-            {/* Sprint prediction button for sprint weekends */}
+          <div className="mt-6 flex flex-wrap gap-3">
             {race.sprintWeekend && !sprintLocked && (
-              <Link
-                to={`/predict/${race.id}/sprint`}
-                className="block flex-1"
-              >
-                <Button
-                  className="w-full border-f1-warning/50 text-f1-warning hover:bg-f1-warning/10"
-                  variant="outline"
-                  size="sm"
-                >
-                  <Zap className="h-3 w-3 mr-1" />
-                  Sprint
+              <Link to={`/predict/${race.id}/sprint`} className="flex-1 min-w-[150px]">
+                <Button className="w-full" variant="outline">
+                  <Zap className="h-4 w-4" />
+                  Sprint Pick
                 </Button>
               </Link>
             )}
-
-            {/* Race prediction button */}
             {!raceLocked && (
               <Link
                 to={`/predict/${race.id}/race`}
-                className={`block ${race.sprintWeekend && !sprintLocked ? "flex-1" : "w-full"}`}
+                className={race.sprintWeekend && !sprintLocked ? "flex-1 min-w-[150px]" : "w-full"}
               >
-                <Button className="w-full" size="sm">
-                  {race.sprintWeekend ? "Grand Prix" : "Make Prediction"}
+                <Button className="w-full">
+                  {race.sprintWeekend ? "Grand Prix Pick" : "Make Prediction"}
                 </Button>
               </Link>
             )}
-
-            {/* Show sprint countdown if sprint is open but race is locked */}
-            {race.sprintWeekend &&
-              sprintLocked &&
-              !raceLocked &&
-              race.sprintQualifyingStartTime && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <Lock className="h-3 w-3 mr-1 text-f1-warning" />
-                  Sprint locked
-                </div>
-              )}
           </div>
         )}
 
-        {/* Sprint countdown when sprint is still open */}
-        {race.sprintWeekend &&
-          !sprintLocked &&
-          !race.isComplete &&
-          race.sprintQualifyingStartTime && (
-            <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Zap className="h-3 w-3 text-f1-warning" />
-                Sprint locks in
-              </span>
-              <CountdownTimer
-                targetDate={race.sprintQualifyingStartTime}
-                className="text-sm text-f1-warning"
-              />
-            </div>
-          )}
+        {race.sprintWeekend && !sprintLocked && !race.isComplete && race.sprintQualifyingStartTime && (
+          <div className="mt-4 flex items-center justify-between rounded-2xl border border-f1-warning/20 bg-f1-warning/10 px-4 py-3 text-xs text-f1-warning">
+            <span className="flex items-center gap-2 uppercase tracking-[0.2em]">
+              <Zap className="h-3.5 w-3.5" />
+              Sprint closes
+            </span>
+            <CountdownTimer targetDate={race.sprintQualifyingStartTime} className="text-sm font-heading text-f1-warning" />
+          </div>
+        )}
       </div>
-      <div className="h-1 bg-gradient-to-r from-primary/0 via-primary/50 to-primary/0" />
     </div>
   );
 };

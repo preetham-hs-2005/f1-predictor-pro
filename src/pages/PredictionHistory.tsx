@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import Navbar from "@/components/layout/Navbar";
-import { useAuth } from "@/contexts/AuthContext";
+import { ArrowLeft, Clock3, Loader2, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getUserPredictions } from "@/lib/api/predictions";
+import { toast } from "sonner";
+
+import Navbar from "@/components/layout/Navbar";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageShell } from "@/components/layout/PageShell";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Trophy } from "lucide-react";
-import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserPredictions } from "@/lib/api/predictions";
 
 export interface PredictionData {
   id: string;
@@ -25,12 +28,11 @@ export interface PredictionData {
 }
 
 const PredictionHistory = () => {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [predictions, setPredictions] = useState<PredictionData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Initialize loading as true from AuthContext if it's still initializing
   useEffect(() => {
     if (authLoading) setLoading(true);
   }, [authLoading]);
@@ -56,100 +58,88 @@ const PredictionHistory = () => {
     };
 
     fetchPredictions();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, authLoading]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell>
       <Navbar />
-      <main className="container pt-24 pb-12">
-        <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="h-10 w-10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="f1-heading text-3xl">Prediction History</h1>
-            <p className="text-muted-foreground">
-              View all your race predictions
-            </p>
-          </div>
-        </div>
+      <main className="container pb-12 pt-28 md:pt-32">
+        <PageHeader
+          eyebrow="Your archive"
+          title="Prediction history"
+          description="Review every sprint and race call you've submitted so far, now in a cleaner magazine-style timeline."
+          actions={
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4" />
+              Go Back
+            </Button>
+          }
+          stats={[
+            { label: "Entries", value: `${predictions.length}` },
+            { label: "Race picks", value: `${predictions.filter((item) => item.type === "race").length}` },
+            { label: "Sprint picks", value: `${predictions.filter((item) => item.type === "sprint").length}` },
+            { label: "Status", value: loading ? "Loading" : "Ready" },
+          ]}
+        />
 
         {loading ? (
-          <div className="flex justify-center items-center py-12">
+          <section className="section-card mt-8 flex min-h-[320px] items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          </section>
         ) : predictions.length === 0 ? (
-          <Card className="p-8 text-center glass border-dashed">
-            <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">No Predictions Yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Start making predictions for upcoming races to see them here.
+          <Card className="section-card mt-8 border-dashed p-10 text-center">
+            <Trophy className="mx-auto h-12 w-12 text-white/35" />
+            <h3 className="mt-4 font-heading text-2xl text-white">No predictions yet</h3>
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-white/60">
+              Start making predictions for upcoming races and this archive will become your season story.
             </p>
-            <Button onClick={() => navigate("/dashboard")}>
+            <Button onClick={() => navigate("/dashboard")} className="mt-6">
               Go to Dashboard
             </Button>
           </Card>
         ) : (
-          <div className="grid gap-4">
+          <section className="mt-8 grid gap-4">
             {predictions.map((prediction) => (
               <Card
                 key={`${prediction.raceWeekendId}-${prediction.type}`}
-                className="glass p-6 hover:border-primary/50 transition-colors"
+                className="section-card p-6 transition-all hover:-translate-y-1 hover:border-white/15"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <h3 className="f1-heading text-lg">
-                        Race {prediction.raceWeekendId}
-                      </h3>
-                      <Badge variant="secondary">
-                        {prediction.type === "sprint" ? "Sprint" : "Race"}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="font-heading text-2xl text-white">Race {prediction.raceWeekendId}</h3>
+                      <Badge
+                        variant="outline"
+                        className="rounded-full border-white/10 bg-white/[0.05] px-3 py-1 uppercase tracking-[0.18em] text-white/75"
+                      >
+                        {prediction.type}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="flex items-center gap-2 text-sm text-white/45">
+                        <Clock3 className="h-4 w-4" />
                         {new Date(prediction.createdAt).toLocaleDateString()}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">P1</p>
-                        <p className="font-semibold">{prediction.predictedP1}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">P2</p>
-                        <p className="font-semibold">{prediction.predictedP2}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">P3</p>
-                        <p className="font-semibold">{prediction.predictedP3}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Pole</p>
-                        <p className="font-semibold">{prediction.predictedPole}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Constructor</p>
-                        <p className="font-semibold">{prediction.predictedConstructor || "None"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Unexpected</p>
-                        <p className="text-xs font-semibold truncate">
-                          {prediction.unexpectedStatement || "N/A"}
-                        </p>
-                      </div>
+                    <div className="mt-6 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+                      {[
+                        { label: "P1", value: prediction.predictedP1 },
+                        { label: "P2", value: prediction.predictedP2 },
+                        { label: "P3", value: prediction.predictedP3 },
+                        { label: "Pole", value: prediction.predictedPole },
+                        { label: "Constructor", value: prediction.predictedConstructor || "None" },
+                        { label: "Unexpected", value: prediction.unexpectedStatement || "N/A" },
+                      ].map((item) => (
+                        <div key={item.label} className="panel-subtle">
+                          <p className="text-[0.68rem] uppercase tracking-[0.22em] text-white/40">{item.label}</p>
+                          <p className="mt-3 truncate text-sm font-semibold text-white/82">{item.value}</p>
+                        </div>
+                      ))}
                     </div>
 
                     {prediction.unexpectedStatement && (
-                      <div className="mt-3 p-3 bg-f1-warning/10 rounded border border-f1-warning/30">
-                        <p className="text-xs text-muted-foreground mb-1">
-                          Unexpected Statement
-                        </p>
-                        <p className="text-sm">{prediction.unexpectedStatement}</p>
+                      <div className="mt-4 rounded-[1.25rem] border border-f1-warning/18 bg-f1-warning/10 p-4">
+                        <p className="page-eyebrow">Unexpected statement</p>
+                        <p className="mt-2 text-sm leading-7 text-white/78">{prediction.unexpectedStatement}</p>
                       </div>
                     )}
                   </div>
@@ -157,15 +147,15 @@ const PredictionHistory = () => {
                     variant="outline"
                     onClick={() => navigate(`/predict/${prediction.raceWeekendId}?type=${prediction.type}`)}
                   >
-                    Edit
+                    Edit Pick
                   </Button>
                 </div>
               </Card>
             ))}
-          </div>
+          </section>
         )}
       </main>
-    </div>
+    </PageShell>
   );
 };
 

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { CalendarClock, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+
 import Navbar from "@/components/layout/Navbar";
+import { PageShell } from "@/components/layout/PageShell";
 import RaceCard from "@/components/dashboard/RaceCard";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 import { getUpcomingRacesFromServer } from "@/lib/api/races";
 import { type RaceWeekend } from "@/lib/data/raceCalendar";
-import { Badge } from "@/components/ui/badge";
-import { Zap } from "lucide-react";
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -27,11 +29,7 @@ const Dashboard = () => {
     setRacesLoading(true);
     setError(null);
     try {
-      console.log("[Dashboard] Fetching races from server...");
       const serverRaces = await getUpcomingRacesFromServer();
-      console.log("[Dashboard] Server races received:", serverRaces.length, serverRaces);
-      
-      // Convert ServerRace to RaceWeekend format
       const converted: RaceWeekend[] = serverRaces.map((race) => ({
         id: race.raceId,
         raceName: race.raceName,
@@ -49,10 +47,8 @@ const Dashboard = () => {
         cancelled: race.cancelled || false,
         officialResults: null,
       }));
-      console.log("[Dashboard] Converted races with cancelled status:", converted);
       setUpcoming(converted);
-    } catch (error) {
-      console.error("[Dashboard] Failed to load races:", error);
+    } catch {
       setError("Failed to load races from server");
       setUpcoming([]);
     } finally {
@@ -72,63 +68,123 @@ const Dashboard = () => {
   const rest = upcoming.slice(3);
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageShell>
       <Navbar />
-      <main className="container pt-24 pb-12">
-        {/* Header */}
-        <div className="mb-8 animate-slide-up">
-          <h1 className="f1-heading text-3xl mb-2">Race Calendar</h1>
-          <p className="text-muted-foreground text-sm">
-            {upcoming.length} races remaining in the 2026 season
-          </p>
-        </div>
-
-        {/* Featured upcoming races */}
-        <section className="mb-12">
-          <h2 className="f1-heading text-sm text-muted-foreground mb-4">Up Next</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((race, i) => (
-              <div key={race.id} className="animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
-                <RaceCard race={race} featured />
+      <main className="container pb-12 pt-28 md:pt-32">
+        <section className="hero-panel overflow-hidden">
+          <div className="relative z-10">
+            <p className="page-eyebrow">Dashboard</p>
+            <div className="mt-4 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+              <div className="max-w-3xl">
+                <h1 className="font-heading text-4xl leading-tight text-white md:text-6xl">
+                  F1 Predict
+                  <span className="block text-gradient-f1">Race Calendar</span>
+                </h1>
+                <p className="mt-5 max-w-2xl text-base leading-8 text-white/68">
+                  Follow the upcoming weekends, watch lock deadlines, and go straight into your next prediction.
+                </p>
               </div>
-            ))}
+
+              <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[420px]">
+                <div className="panel-subtle">
+                  <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Races left</p>
+                  <p className="mt-3 font-heading text-3xl text-white">{upcoming.length}</p>
+                </div>
+                <div className="panel-subtle">
+                  <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Sprint weekends</p>
+                  <p className="mt-3 font-heading text-3xl text-white">{upcoming.filter((race) => race.sprintWeekend).length}</p>
+                </div>
+                <div className="panel-subtle">
+                  <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Status</p>
+                  <p className="mt-3 font-heading text-3xl text-white">{error ? "Issue" : racesLoading ? "Syncing" : "Live"}</p>
+                </div>
+              </div>
+            </div>
           </div>
+          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[36%] bg-[radial-gradient(circle_at_center,rgba(255,79,50,0.22),transparent_65%)] xl:block" />
         </section>
 
-        {/* Full schedule */}
-        {rest.length > 0 && (
-          <section>
-            <h2 className="f1-heading text-sm text-muted-foreground mb-4">
-              Full Schedule
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {rest.map((race) => (
-                <div key={race.id} className="glass rounded-lg p-4 flex items-center justify-between gap-3 transition-all hover:border-primary/20">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-lg shrink-0">{race.countryFlag}</span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">{race.raceName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        R{race.round} ·{" "}
-                        {new Date(race.raceStartTime).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                  {race.sprintWeekend && (
-                    <Badge variant="outline" className="border-f1-warning/40 text-f1-warning text-[10px] shrink-0">
-                      <Zap className="h-2.5 w-2.5" />
-                    </Badge>
-                  )}
-                </div>
-              ))}
+        {error ? (
+          <section className="section-card mt-8 border border-destructive/20 bg-destructive/10">
+            <p className="font-heading text-xl text-destructive">Unable to load calendar</p>
+            <p className="mt-3 text-sm text-white/65">{error}</p>
+          </section>
+        ) : racesLoading ? (
+          <section className="section-card mt-8 flex min-h-[220px] items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-9 w-9 animate-spin rounded-full border-b-2 border-primary" />
+              <p className="text-sm text-white/60">Loading the latest race schedule...</p>
             </div>
           </section>
+        ) : (
+          <>
+            <section className="mt-8">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="page-eyebrow">Up next</p>
+                  <h2 className="mt-2 font-heading text-2xl text-white">Featured weekends</h2>
+                </div>
+                <Badge className="badge-signal">
+                  <CalendarClock className="mr-1.5 h-3 w-3" />
+                  Live calendar
+                </Badge>
+              </div>
+              <div className="grid gap-4 xl:grid-cols-3">
+                {featured.map((race, i) => (
+                  <div key={race.id} className="animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
+                    <RaceCard race={race} featured />
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {rest.length > 0 && (
+              <section className="mt-10 section-card">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="page-eyebrow">Full schedule</p>
+                    <h2 className="mt-2 font-heading text-2xl text-white">Rest of the calendar</h2>
+                  </div>
+                  <Badge variant="outline" className="rounded-full border-f1-warning/30 bg-f1-warning/10 text-f1-warning">
+                    <Zap className="mr-1.5 h-3 w-3" />
+                    Sprint marked
+                  </Badge>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {rest.map((race) => (
+                    <div
+                      key={race.id}
+                      className="panel-subtle flex items-center justify-between gap-4 transition-all hover:-translate-y-0.5 hover:border-white/15"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05] text-2xl">
+                          {race.countryFlag}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-heading truncate text-base text-white">{race.raceName}</p>
+                          <p className="text-sm text-white/50">
+                            Round {race.round} •{" "}
+                            {new Date(race.raceStartTime).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      {race.sprintWeekend && (
+                        <Badge variant="outline" className="rounded-full border-f1-warning/30 bg-f1-warning/10 text-f1-warning">
+                          <Zap className="h-3 w-3" />
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </main>
-    </div>
+    </PageShell>
   );
 };
 

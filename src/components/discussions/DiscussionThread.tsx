@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Trash2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDiscussion } from "@/hooks/useDiscussions";
+import { useToast } from "@/hooks/use-toast";
 import { deleteDiscussion } from "@/lib/api/discussions";
 import MessageForm from "./MessageForm";
 import MessageItem from "./MessageItem";
 import PollComponent from "./PollComponent";
-import { useToast } from "@/hooks/use-toast";
 
 interface DiscussionThreadProps {
   discussionId: string;
@@ -44,7 +45,6 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
     fetchDiscussion(discussionId);
   }, [discussionId, fetchDiscussion]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -91,11 +91,7 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
 
   const handleDeleteDiscussion = async () => {
     if (!discussion) return;
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this discussion? All messages and polls will be deleted."
-      )
-    ) {
+    if (!window.confirm("Are you sure you want to delete this discussion? All messages and polls will be deleted.")) {
       return;
     }
 
@@ -111,13 +107,13 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
   };
 
   if (loading) {
-    return <Skeleton className="w-full h-96" />;
+    return <Skeleton className="h-96 w-full rounded-[2rem] bg-white/[0.06]" />;
   }
 
   if (error || !discussion) {
     return (
-      <div className="text-center py-8">
-        <p className="text-red-600 mb-4">{error || "Discussion not found"}</p>
+      <div className="section-card py-8 text-center">
+        <p className="mb-4 text-destructive">{error || "Discussion not found"}</p>
         <Button onClick={onBack}>Back to Discussions</Button>
       </div>
     );
@@ -128,24 +124,18 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
   const canDelete = isAuthor || isAdmin;
 
   return (
-    <div className="flex flex-col h-full bg-black items-center">
-      <div className="w-full max-w-2xl flex flex-col h-full border-x border-gray-800 overflow-hidden">
-        {/* Header */}
-        <div className="border-b border-gray-800 bg-black px-4 py-4 flex-shrink-0">
+    <div className="flex h-full flex-col items-center">
+      <div className="glass-strong flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-white/10">
+        <div className="flex-shrink-0 border-b border-white/10 bg-white/[0.03] px-5 py-5">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <Button
-                variant="ghost"
-                onClick={onBack}
-                className="gap-2 text-gray-400 hover:text-white mb-2 -ml-3"
-              >
+              <Button variant="ghost" onClick={onBack} className="mb-2 -ml-3 gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Button>
-              <h2 className="text-xl font-bold text-white">{discussion.title}</h2>
-              <p className="text-xs text-gray-500 mt-1">
-                {discussion.userName} • {new Date(discussion.createdAt).toLocaleDateString()} •{" "}
-                {discussion.views} views
+              <h2 className="font-heading text-2xl text-white">{discussion.title}</h2>
+              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/38">
+                {discussion.userName} • {new Date(discussion.createdAt).toLocaleDateString()} • {discussion.views} views
               </p>
             </div>
             {canDelete && (
@@ -154,7 +144,7 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
                 size="sm"
                 onClick={handleDeleteDiscussion}
                 disabled={isDeleting}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-400 hover:text-red-300"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -162,17 +152,15 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
           </div>
         </div>
 
-        {/* Discussion content preview */}
-        <div className="border-b border-gray-800 bg-black px-4 py-3">
-          <p className="text-sm text-gray-300 whitespace-pre-wrap break-words max-h-20 overflow-y-auto">
+        <div className="border-b border-white/10 bg-white/[0.02] px-5 py-4">
+          <p className="max-h-20 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-7 text-white/72">
             {discussion.content}
           </p>
         </div>
 
-        {/* Polls section */}
         {polls.length > 0 && (
-          <div className="border-b border-gray-800 bg-black px-4 py-4 flex flex-col shrink-0 max-h-[104px]">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3 shrink-0">Polls</h3>
+          <div className="flex max-h-[140px] shrink-0 flex-col border-b border-white/10 bg-white/[0.02] px-5 py-4">
+            <h3 className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-white/38">Polls</h3>
             <div className="space-y-3 overflow-y-auto pr-2">
               {polls.map((poll) => (
                 <PollComponent
@@ -188,38 +176,36 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
           </div>
         )}
 
-      {/* Messages container */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 w-full">
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500 text-center">
-              No messages yet. Start the conversation!
-            </p>
-          </div>
-        ) : (
-          <>
-            {messages.map((message) => (
-              <MessageItem
-                key={message._id}
-                message={message}
-                currentUserId={user?.id || ""}
-                isAdmin={user?.role === "admin" || false}
-                onDelete={async (id) => { await deleteMessage(id); }}
-                onLike={likeMessage}
-              />
-            ))}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
+        <div className="flex-1 w-full space-y-4 overflow-y-auto px-5 py-5">
+          {messages.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-center text-white/45">No messages yet. Start the conversation!</p>
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <MessageItem
+                  key={message._id}
+                  message={message}
+                  currentUserId={user?.id || ""}
+                  isAdmin={user?.role === "admin" || false}
+                  onDelete={async (id) => {
+                    await deleteMessage(id);
+                  }}
+                  onLike={likeMessage}
+                />
+              ))}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
 
-      {/* Message input */}
-      <MessageForm
-        onSubmit={handleSendMessage}
-        isLoading={sendingMessage}
-        onCreatePoll={handleCreatePoll}
-        isCreatingPoll={creatingPoll}
-      />
+        <MessageForm
+          onSubmit={handleSendMessage}
+          isLoading={sendingMessage}
+          onCreatePoll={handleCreatePoll}
+          isCreatingPoll={creatingPoll}
+        />
       </div>
     </div>
   );
