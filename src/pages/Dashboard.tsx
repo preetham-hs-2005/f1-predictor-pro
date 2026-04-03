@@ -70,7 +70,7 @@ const Dashboard = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="container pb-12 pt-24 md:pt-32">
+      <main className="container pb-12 pt-28 md:pt-32">
         <section className="hero-panel overflow-hidden">
           <div className="relative z-10">
             <p className="page-eyebrow">Dashboard</p>
@@ -154,12 +154,9 @@ const Dashboard = () => {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {rest.map((race) => (
-                    <div
-                      key={race.id}
-                      className="panel-subtle flex items-center justify-between gap-4 transition-all hover:-translate-y-0.5 hover:border-white/15"
-                    >
+                    <div key={race.id} className="panel-subtle min-w-0 transition-all hover:-translate-y-0.5 hover:border-white/15">
                       <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05] text-2xl">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.05] text-2xl">
                           {race.countryFlag}
                         </div>
                         <div className="min-w-0">
@@ -174,9 +171,11 @@ const Dashboard = () => {
                         </div>
                       </div>
                       {race.sprintWeekend && (
-                        <Badge variant="outline" className="rounded-full border-f1-warning/30 bg-f1-warning/10 text-f1-warning">
-                          <Zap className="h-3 w-3" />
-                        </Badge>
+                        <div className="mt-3 flex justify-start sm:justify-end">
+                          <Badge variant="outline" className="rounded-full border-f1-warning/30 bg-f1-warning/10 text-f1-warning">
+                            <Zap className="h-3 w-3" />
+                          </Badge>
+                        </div>
                       )}
                     </div>
                   ))}

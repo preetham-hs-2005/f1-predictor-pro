@@ -69,7 +69,7 @@ const PredictionHistory = () => {
           title="Prediction history"
           description="Review every sprint and race call you've submitted so far, now in a cleaner magazine-style timeline."
           actions={
-            <Button variant="outline" onClick={() => navigate(-1)}>
+            <Button variant="outline" className="max-sm:w-full" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-4 w-4" />
               Go Back
             </Button>
@@ -102,12 +102,12 @@ const PredictionHistory = () => {
             {predictions.map((prediction) => (
               <Card
                 key={`${prediction.raceWeekendId}-${prediction.type}`}
-                className="section-card p-6 transition-all hover:-translate-y-1 hover:border-white/15"
+                className="section-card p-4 sm:p-6 transition-all hover:-translate-y-1 hover:border-white/15"
               >
-                <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="flex-1">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="font-heading text-2xl text-white">Race {prediction.raceWeekendId}</h3>
+                      <h3 className="break-all font-heading text-xl text-white sm:text-2xl">Race {prediction.raceWeekendId}</h3>
                       <Badge
                         variant="outline"
                         className="rounded-full border-white/10 bg-white/[0.05] px-3 py-1 uppercase tracking-[0.18em] text-white/75"
@@ -120,7 +120,7 @@ const PredictionHistory = () => {
                       </span>
                     </div>
 
-                    <div className="mt-6 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+                    <div className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
                       {[
                         { label: "P1", value: prediction.predictedP1 },
                         { label: "P2", value: prediction.predictedP2 },
@@ -129,7 +129,7 @@ const PredictionHistory = () => {
                         { label: "Constructor", value: prediction.predictedConstructor || "None" },
                         { label: "Unexpected", value: prediction.unexpectedStatement || "N/A" },
                       ].map((item) => (
-                        <div key={item.label} className="panel-subtle">
+                        <div key={item.label} className="panel-subtle min-w-0">
                           <p className="text-[0.68rem] uppercase tracking-[0.22em] text-white/40">{item.label}</p>
                           <p className="mt-3 truncate text-sm font-semibold text-white/82">{item.value}</p>
                         </div>
@@ -145,6 +145,7 @@ const PredictionHistory = () => {
                   </div>
                   <Button
                     variant="outline"
+                    className="w-full xl:w-auto"
                     onClick={() => navigate(`/predict/${prediction.raceWeekendId}?type=${prediction.type}`)}
                   >
                     Edit Pick

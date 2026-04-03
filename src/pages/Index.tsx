@@ -19,15 +19,20 @@ const Index = () => {
     <PageShell>
       <div className="container relative z-10 flex min-h-screen flex-col pb-12 pt-4 sm:pb-16 sm:pt-6">
         <header className="flex items-center justify-between gap-3">
-          <BrandMark />
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="min-w-0 flex-1">
+            <BrandMark />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             <Link to="/login">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="px-3 sm:px-4">
                 Sign In
               </Button>
             </Link>
             <Link to="/register">
-              <Button size="sm">Join Now</Button>
+              <Button size="sm" className="px-3 sm:px-4">
+                <span className="sm:hidden">Join</span>
+                <span className="hidden sm:inline">Join Now</span>
+              </Button>
             </Link>
           </div>
         </header>
