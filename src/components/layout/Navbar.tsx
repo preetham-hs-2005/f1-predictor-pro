@@ -30,9 +30,9 @@ const adminNavItem = { to: "/admin", label: "Admin", icon: Shield };
 
 const navButtonClass = (active: boolean) =>
   cn(
-    "rounded-full border px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] transition-all",
+    "rounded-full border px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] transition-all md:px-4 md:text-[0.7rem] md:tracking-[0.18em]",
     active
-      ? "border-primary/40 bg-primary/18 text-white shadow-[0_10px_30px_rgba(255,105,61,0.2)]"
+      ? "border-primary/40 bg-primary/20 text-white shadow-[0_10px_30px_rgba(255,105,61,0.2)]"
       : "border-transparent bg-transparent text-white/62 hover:border-white/10 hover:bg-white/[0.05] hover:text-white",
   );
 
@@ -45,8 +45,8 @@ const Navbar = () => {
   return (
     <>
       <header className="fixed left-0 right-0 top-0 z-50 px-3 pt-3 md:px-6">
-        <div className="glass-strong mx-auto flex max-w-7xl items-center gap-4 rounded-[1.75rem] px-4 py-3 md:px-5">
-          <div className="shrink-0">
+        <div className="glass-strong mx-auto flex max-w-7xl items-center gap-3 rounded-[1.4rem] px-3 py-3 md:gap-4 md:rounded-[1.75rem] md:px-5">
+          <div className="min-w-0 shrink">
             <BrandMark to="/dashboard" />
           </div>
 
@@ -73,7 +73,7 @@ const Navbar = () => {
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger className="rounded-full focus:outline-none ring-offset-background transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                  <Avatar className="h-11 w-11 border border-white/10 bg-white/[0.04]">
+                  <Avatar className="h-10 w-10 border border-white/10 bg-white/[0.04] md:h-11 md:w-11">
                     <AvatarImage src={`https://api.dicebear.com/7.x/identicon/svg?seed=${user.id}`} alt={user.name} />
                     <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
@@ -106,7 +106,7 @@ const Navbar = () => {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[88vw] max-w-sm">
+            <SheetContent side="right" className="w-[92vw] max-w-sm px-4">
               <div className="mt-8 flex flex-col gap-6">
                 <BrandMark to="/dashboard" />
                 {user && (

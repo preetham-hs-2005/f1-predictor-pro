@@ -70,33 +70,35 @@ const Dashboard = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="container pb-12 pt-28 md:pt-32">
+      <main className="container pb-12 pt-24 md:pt-32">
         <section className="hero-panel overflow-hidden">
           <div className="relative z-10">
             <p className="page-eyebrow">Dashboard</p>
             <div className="mt-4 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
               <div className="max-w-3xl">
-                <h1 className="font-heading text-4xl leading-tight text-white md:text-6xl">
+                <h1 className="font-heading text-3xl leading-tight text-white sm:text-4xl md:text-6xl">
                   F1 Predict
                   <span className="block text-gradient-f1">Race Calendar</span>
                 </h1>
-                <p className="mt-5 max-w-2xl text-base leading-8 text-white/68">
+                <p className="mt-5 max-w-2xl text-sm leading-7 text-white/68 sm:text-base sm:leading-8">
                   Follow the upcoming weekends, watch lock deadlines, and go straight into your next prediction.
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[420px]">
+              <div className="grid gap-3 sm:grid-cols-3 xl:min-w-0 xl:max-w-[480px]">
                 <div className="panel-subtle">
                   <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Races left</p>
-                  <p className="mt-3 font-heading text-3xl text-white">{upcoming.length}</p>
+                  <p className="mt-3 font-heading text-2xl text-white sm:text-3xl">{upcoming.length}</p>
                 </div>
                 <div className="panel-subtle">
                   <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Sprint weekends</p>
-                  <p className="mt-3 font-heading text-3xl text-white">{upcoming.filter((race) => race.sprintWeekend).length}</p>
+                  <p className="mt-3 font-heading text-2xl text-white sm:text-3xl">
+                    {upcoming.filter((race) => race.sprintWeekend).length}
+                  </p>
                 </div>
                 <div className="panel-subtle">
                   <p className="text-[0.68rem] uppercase tracking-[0.26em] text-white/40">Status</p>
-                  <p className="mt-3 font-heading text-3xl text-white">{error ? "Issue" : racesLoading ? "Syncing" : "Live"}</p>
+                  <p className="mt-3 font-heading text-2xl text-white sm:text-3xl">{error ? "Issue" : racesLoading ? "Syncing" : "Live"}</p>
                 </div>
               </div>
             </div>
@@ -119,17 +121,17 @@ const Dashboard = () => {
         ) : (
           <>
             <section className="mt-8">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="page-eyebrow">Up next</p>
                   <h2 className="mt-2 font-heading text-2xl text-white">Featured weekends</h2>
                 </div>
-                <Badge className="badge-signal">
+                <Badge className="badge-signal w-fit">
                   <CalendarClock className="mr-1.5 h-3 w-3" />
                   Live calendar
                 </Badge>
               </div>
-              <div className="grid gap-4 xl:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {featured.map((race, i) => (
                   <div key={race.id} className="animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
                     <RaceCard race={race} featured />
@@ -140,12 +142,12 @@ const Dashboard = () => {
 
             {rest.length > 0 && (
               <section className="mt-10 section-card">
-                <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="page-eyebrow">Full schedule</p>
                     <h2 className="mt-2 font-heading text-2xl text-white">Rest of the calendar</h2>
                   </div>
-                  <Badge variant="outline" className="rounded-full border-f1-warning/30 bg-f1-warning/10 text-f1-warning">
+                  <Badge variant="outline" className="w-fit rounded-full border-f1-warning/30 bg-f1-warning/10 text-f1-warning">
                     <Zap className="mr-1.5 h-3 w-3" />
                     Sprint marked
                   </Badge>

@@ -67,7 +67,7 @@ const Discussions = () => {
     return (
       <PageShell>
         <Navbar />
-        <div className="container mt-24 h-[calc(100vh-7.5rem)] pb-6 md:mt-28">
+        <div className="container mt-24 h-[calc(100svh-7rem)] pb-4 md:mt-28 md:h-[calc(100svh-7.5rem)] md:pb-6">
           <DiscussionThread discussionId={selectedDiscussionId} onBack={() => setSelectedDiscussionId(null)} />
         </div>
       </PageShell>
@@ -77,7 +77,7 @@ const Discussions = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="container pb-12 pt-28 md:pt-32">
+      <main className="container pb-12 pt-24 md:pt-32">
         <PageHeader
           eyebrow="Community"
           title="Discussions and polls"
@@ -85,7 +85,7 @@ const Discussions = () => {
           actions={
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="max-sm:w-full">
                   <MessageSquarePlus className="h-4 w-4" />
                   New Discussion
                 </Button>
@@ -108,8 +108,8 @@ const Discussions = () => {
 
         <section className="section-card mt-8">
           <div className="mb-6 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
-            <p className="flex items-center gap-2 text-sm text-white/72">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <p className="flex items-start gap-2 text-sm text-white/72">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               This page keeps all existing features, but now reads like a premium social hub instead of a plain forum list.
             </p>
           </div>

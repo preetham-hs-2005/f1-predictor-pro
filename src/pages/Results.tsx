@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Flag, Loader, ShieldCheck } from "lucide-react";
+import { AlertCircle, Loader, ShieldCheck } from "lucide-react";
 
 import Navbar from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -78,7 +78,7 @@ const Results = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="container pb-12 pt-28 md:pt-32">
+      <main className="container pb-12 pt-24 md:pt-32">
         <PageHeader
           eyebrow="Official data"
           title="Race results archive"
@@ -123,7 +123,7 @@ const Results = () => {
                         {race.countryFlag}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-heading text-base text-white truncate">{race.raceName}</p>
+                        <p className="truncate font-heading text-base text-white">{race.raceName}</p>
                         <p className="text-sm text-white/45">Round {race.round}</p>
                       </div>
                     </div>

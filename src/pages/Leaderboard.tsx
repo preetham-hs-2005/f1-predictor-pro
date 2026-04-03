@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Crown, Loader, Medal, TimerReset } from "lucide-react";
+import { Crown, Loader, Medal, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "@/components/layout/Navbar";
@@ -68,47 +68,45 @@ const Leaderboard = () => {
     };
 
     fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 30000);
-    return () => clearInterval(interval);
   }, [isAuthenticated, navigate, authIsLoading]);
 
   return (
     <PageShell>
       <Navbar />
-      <main className="container pb-12 pt-28 md:pt-32">
+      <main className="container pb-12 pt-24 md:pt-32">
         <PageHeader
           eyebrow="Standings"
           title="Championship leaderboard"
           description="A cleaner race table for season-long bragging rights, with prediction details still one click away."
-          badge="Auto-refresh"
+          badge="Season standings"
           stats={[
             { label: "Drivers", value: `${leaderboard.length}` },
             { label: "Top score", value: leaderboard[0] ? `${leaderboard[0].totalPoints} pts` : "TBD" },
             { label: "Podium locks", value: `${leaderboard.reduce((sum, entry) => sum + entry.exactPodiums, 0)}` },
-            { label: "Refresh", value: "30 sec" },
+            { label: "Season", value: "2026" },
           ]}
         />
 
         <section className="mt-8 grid gap-4 lg:grid-cols-3">
           <div className="section-card">
             <p className="page-eyebrow">Title fight</p>
-            <p className="mt-3 flex items-center gap-3 font-heading text-2xl text-white">
+            <p className="mt-3 flex items-center gap-3 font-heading text-xl text-white sm:text-2xl">
               <Crown className="h-6 w-6 text-f1-gold" />
-              {leaderboard[0]?.username || leaderboard[0]?.name || "Waiting on the first leader"}
+              <span className="truncate">{leaderboard[0]?.username || leaderboard[0]?.name || "Waiting on the first leader"}</span>
             </p>
           </div>
           <div className="section-card">
             <p className="page-eyebrow">Total winner picks</p>
-            <p className="mt-3 flex items-center gap-3 font-heading text-2xl text-white">
+            <p className="mt-3 flex items-center gap-3 font-heading text-xl text-white sm:text-2xl">
               <Medal className="h-6 w-6 text-primary" />
               {leaderboard.reduce((sum, entry) => sum + entry.correctWinners, 0)}
             </p>
           </div>
           <div className="section-card">
-            <p className="page-eyebrow">Sync cadence</p>
-            <p className="mt-3 flex items-center gap-3 font-heading text-2xl text-white">
-              <TimerReset className="h-6 w-6 text-cyan-300" />
-              Every 30 seconds
+            <p className="page-eyebrow">Current leader</p>
+            <p className="mt-3 flex items-center gap-3 font-heading text-xl text-white sm:text-2xl">
+              <Trophy className="h-6 w-6 text-primary" />
+              {leaderboard[0]?.totalPoints ? `${leaderboard[0].totalPoints} pts` : "No score yet"}
             </p>
           </div>
         </section>
@@ -132,23 +130,23 @@ const Leaderboard = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-[72px_1fr_86px] gap-3 border-b border-white/10 px-4 py-4 text-[0.68rem] uppercase tracking-[0.24em] text-white/42 md:grid-cols-[72px_1fr_120px_120px_120px_120px]">
+              <div className="hidden grid-cols-[72px_1fr_120px_120px_120px_120px] gap-3 border-b border-white/10 px-4 py-4 text-[0.68rem] uppercase tracking-[0.24em] text-white/42 md:grid">
                 <span>Pos</span>
                 <span>Driver</span>
                 <span className="text-right">Points</span>
-                <span className="hidden text-right md:block">Correct P1</span>
-                <span className="hidden text-right md:block">Exact Pods</span>
-                <span className="hidden text-right md:block">Predictions</span>
+                <span className="text-right">Correct P1</span>
+                <span className="text-right">Exact Pods</span>
+                <span className="text-right">Predictions</span>
               </div>
               <div className="mt-2 space-y-2">
                 {leaderboard.map((entry) => (
                   <div
                     key={entry.userId}
-                    className={`grid grid-cols-[72px_1fr_86px] gap-3 rounded-[1.25rem] border px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-white/15 md:grid-cols-[72px_1fr_120px_120px_120px_120px] ${getRowStyle(
+                    className={`grid grid-cols-[56px_1fr_76px] gap-3 rounded-[1.25rem] border px-3 py-4 transition-all hover:-translate-y-0.5 hover:border-white/15 sm:px-4 md:grid-cols-[72px_1fr_120px_120px_120px_120px] ${getRowStyle(
                       entry.rank,
                     )}`}
                   >
-                    <span className="flex items-center text-lg font-semibold text-white">
+                    <span className="flex items-center text-base font-semibold text-white md:text-lg">
                       {getMedalEmoji(entry.rank) || entry.rank}
                     </span>
                     <button
@@ -157,10 +155,10 @@ const Leaderboard = () => {
                       onClick={() => setSelectedUser(entry)}
                       title="Click to view predictions"
                     >
-                      <p className="truncate font-heading text-lg text-white">{entry.username || entry.name}</p>
-                      <p className="mt-1 text-sm text-white/45">{entry.email}</p>
+                      <p className="truncate font-heading text-base text-white md:text-lg">{entry.username || entry.name}</p>
+                      <p className="mt-1 hidden text-sm text-white/45 md:block">{entry.email}</p>
                     </button>
-                    <span className="text-right text-lg font-semibold tabular-nums text-white">{entry.totalPoints}</span>
+                    <span className="text-right text-base font-semibold tabular-nums text-white md:text-lg">{entry.totalPoints}</span>
                     <span className="hidden text-right text-sm tabular-nums text-white/60 md:block">{entry.correctWinners}</span>
                     <span className="hidden text-right text-sm tabular-nums text-white/60 md:block">{entry.exactPodiums}</span>
                     <span className="hidden text-right text-sm tabular-nums text-white/60 md:block">{entry.predictionsSubmitted}</span>
@@ -171,7 +169,7 @@ const Leaderboard = () => {
           )}
         </section>
 
-        <div className="mt-5 flex items-center justify-center gap-2 text-xs uppercase tracking-[0.2em] text-white/38">
+        <div className="mt-5 flex items-center justify-center gap-2 text-center text-xs uppercase tracking-[0.2em] text-white/38">
           <Badge className="badge-signal">Live scoring</Badge>
           Points are calculated from actual race results
         </div>

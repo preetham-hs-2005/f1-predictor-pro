@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Trophy, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { type RaceWeekend } from "@/lib/data/raceCalendar";
 import { useDrivers } from "@/hooks/useDrivers";
@@ -7,15 +10,7 @@ import { submitPrediction, getUserPrediction } from "@/lib/api/predictions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Trophy, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PredictionFormProps {
   race: RaceWeekend;
@@ -37,17 +32,16 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
   const [initializing, setInitializing] = useState(true);
 
   const { drivers, isLoading: loadingDrivers } = useDrivers();
-  const teamsWithColors = Array.from(new Set(drivers.map(d => d.team)))
+  const teamsWithColors = Array.from(new Set(drivers.map((d) => d.team)))
     .sort()
-    .map(team => {
-      const driver = drivers.find(d => d.team === team);
+    .map((team) => {
+      const driver = drivers.find((d) => d.team === team);
       return { team, color: driver?.teamColor || "#FFFFFF" };
     });
 
   const isSprint = type === "sprint";
   const pointMultiplier = isSprint ? 0.5 : 1;
 
-  // Load existing prediction from API
   useEffect(() => {
     const loadPrediction = async () => {
       if (!user) return;
@@ -62,7 +56,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         setConstructor(prediction.predictedConstructor || "");
         setUnexpected(prediction.unexpectedStatement);
       } catch {
-        // No existing prediction, form stays empty
+        // No existing prediction
       } finally {
         setInitializing(false);
       }
@@ -71,8 +65,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
     loadPrediction();
   }, [race.id, type, user]);
 
-  const canSubmit =
-    p1 && p2 && p3 && pole && constructor && unexpected.length >= 10 && !locked && !loading;
+  const canSubmit = p1 && p2 && p3 && pole && constructor && unexpected.length >= 10 && !locked && !loading;
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -101,9 +94,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         unexpectedStatement: unexpected,
       });
 
-      toast.success(
-        `${isSprint ? "Sprint" : "Race"} prediction submitted!`
-      );
+      toast.success(`${isSprint ? "Sprint" : "Race"} prediction submitted!`);
       navigate("/dashboard");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to submit prediction";
@@ -115,7 +106,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
 
   if (initializing || loadingDrivers) {
     return (
-      <div className="flex justify-center items-center py-8">
+      <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -123,22 +114,18 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
 
   return (
     <>
-      {/* Podium prediction */}
-      <section className="glass rounded-xl p-6 mb-6 animate-slide-up">
-        <h2 className="f1-heading text-sm text-muted-foreground mb-6 flex items-center gap-2">
+      <section className="glass mb-6 rounded-xl p-4 sm:p-6 animate-slide-up">
+        <h2 className="f1-heading mb-6 flex items-center gap-2 text-sm text-muted-foreground">
           <Trophy className="h-4 w-4 text-f1-gold" />
           Podium Prediction
         </h2>
 
-        <div className="flex items-end justify-center gap-3 mb-6">
-          {/* P2 - Silver */}
-          <div className="flex flex-col items-center w-full max-w-[180px]">
-            <span className="text-xs text-muted-foreground mb-2 f1-heading">
-              P2
-            </span>
-            <div className="w-full h-40 glass rounded-lg flex items-center justify-center podium-silver border-2 p-2">
+        <div className="mb-6 grid gap-3 sm:grid-cols-3 sm:items-end">
+          <div className="order-2 flex w-full flex-col items-center sm:order-1 sm:max-w-[180px]">
+            <span className="f1-heading mb-2 text-xs text-muted-foreground">P2</span>
+            <div className="glass podium-silver flex h-28 w-full items-center justify-center rounded-lg border-2 p-2 sm:h-40">
               <Select value={p2} onValueChange={setP2} disabled={locked}>
-                <SelectTrigger className="bg-transparent border-none text-center">
+                <SelectTrigger className="border-none bg-transparent text-center">
                   <SelectValue placeholder="Select P2" />
                 </SelectTrigger>
                 <SelectContent>
@@ -147,10 +134,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
                     .map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         <span className="flex items-center gap-2">
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: d.teamColor }}
-                          />
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: d.teamColor }} />
                           {d.name}
                         </span>
                       </SelectItem>
@@ -160,14 +144,11 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
             </div>
           </div>
 
-          {/* P1 - Gold */}
-          <div className="flex flex-col items-center w-full max-w-[200px]">
-            <span className="text-xs text-muted-foreground mb-2 f1-heading">
-              P1
-            </span>
-            <div className="w-full h-52 glass rounded-lg flex items-center justify-center podium-gold border-2 p-2">
+          <div className="order-1 flex w-full flex-col items-center sm:order-2 sm:max-w-[200px]">
+            <span className="f1-heading mb-2 text-xs text-muted-foreground">P1</span>
+            <div className="glass podium-gold flex h-32 w-full items-center justify-center rounded-lg border-2 p-2 sm:h-52">
               <Select value={p1} onValueChange={setP1} disabled={locked}>
-                <SelectTrigger className="bg-transparent border-none text-center">
+                <SelectTrigger className="border-none bg-transparent text-center">
                   <SelectValue placeholder="Select P1" />
                 </SelectTrigger>
                 <SelectContent>
@@ -176,10 +157,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
                     .map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         <span className="flex items-center gap-2">
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: d.teamColor }}
-                          />
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: d.teamColor }} />
                           {d.name}
                         </span>
                       </SelectItem>
@@ -189,14 +167,11 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
             </div>
           </div>
 
-          {/* P3 - Bronze */}
-          <div className="flex flex-col items-center w-full max-w-[180px]">
-            <span className="text-xs text-muted-foreground mb-2 f1-heading">
-              P3
-            </span>
-            <div className="w-full h-32 glass rounded-lg flex items-center justify-center podium-bronze border-2 p-2">
+          <div className="order-3 flex w-full flex-col items-center sm:max-w-[180px]">
+            <span className="f1-heading mb-2 text-xs text-muted-foreground">P3</span>
+            <div className="glass podium-bronze flex h-24 w-full items-center justify-center rounded-lg border-2 p-2 sm:h-32">
               <Select value={p3} onValueChange={setP3} disabled={locked}>
-                <SelectTrigger className="bg-transparent border-none text-center">
+                <SelectTrigger className="border-none bg-transparent text-center">
                   <SelectValue placeholder="Select P3" />
                 </SelectTrigger>
                 <SelectContent>
@@ -205,10 +180,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
                     .map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         <span className="flex items-center gap-2">
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: d.teamColor }}
-                          />
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: d.teamColor }} />
                           {d.name}
                         </span>
                       </SelectItem>
@@ -219,8 +191,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
           </div>
         </div>
 
-        {/* Scoring guide */}
-        <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+        <div className="flex flex-wrap justify-center gap-4 text-center text-xs text-muted-foreground">
           <span>P1: {25 * pointMultiplier}pts</span>
           <span>P2: {20 * pointMultiplier}pts</span>
           <span>P3: {15 * pointMultiplier}pts</span>
@@ -228,10 +199,9 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         </div>
       </section>
 
-      {/* Pole Position */}
-      <section className="glass rounded-xl p-6 mb-6 animate-slide-up">
-        <Label className="f1-heading text-sm text-muted-foreground mb-3 block">
-          {isSprint ? "Sprint Pole" : "Pole Position"} · {10 * pointMultiplier}pts
+      <section className="glass mb-6 rounded-xl p-4 sm:p-6 animate-slide-up">
+        <Label className="f1-heading mb-3 block text-sm text-muted-foreground">
+          {isSprint ? "Sprint Pole" : "Pole Position"} • {10 * pointMultiplier}pts
         </Label>
         <Select value={pole} onValueChange={setPole} disabled={locked}>
           <SelectTrigger className="bg-background/50">
@@ -241,10 +211,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
             {drivers.map((d) => (
               <SelectItem key={d.id} value={d.id}>
                 <span className="flex items-center gap-2">
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: d.teamColor }}
-                  />
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: d.teamColor }} />
                   #{d.number} {d.name}
                 </span>
               </SelectItem>
@@ -253,10 +220,9 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         </Select>
       </section>
 
-      {/* Constructor */}
-      <section className="glass rounded-xl p-6 mb-6 animate-slide-up">
-        <Label className="f1-heading text-sm text-muted-foreground mb-3 block">
-          Highest Scoring Constructor · {10 * pointMultiplier}pts
+      <section className="glass mb-6 rounded-xl p-4 sm:p-6 animate-slide-up">
+        <Label className="f1-heading mb-3 block text-sm text-muted-foreground">
+          Highest Scoring Constructor • {10 * pointMultiplier}pts
         </Label>
         <Select value={constructor} onValueChange={setConstructor} disabled={locked}>
           <SelectTrigger className="bg-background/50">
@@ -266,10 +232,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
             {teamsWithColors.map((t) => (
               <SelectItem key={t.team} value={t.team}>
                 <span className="flex items-center gap-2">
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: t.color }}
-                  />
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
                   {t.team}
                 </span>
               </SelectItem>
@@ -278,53 +241,36 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         </Select>
       </section>
 
-      {/* Expect the Unexpected */}
-      <section className="glass rounded-xl p-6 mb-8 animate-slide-up">
-        <Label className="f1-heading text-sm text-muted-foreground mb-3 block">
-          Expect the Unexpected · {15 * pointMultiplier}pts
+      <section className="glass mb-8 rounded-xl p-4 sm:p-6 animate-slide-up">
+        <Label className="f1-heading mb-3 block text-sm text-muted-foreground">
+          Expect the Unexpected • {15 * pointMultiplier}pts
         </Label>
         <Textarea
           placeholder="e.g., Albon will finish in top 5, Hamilton and Verstappen will both DNF"
           value={unexpected}
           onChange={(e) => setUnexpected(e.target.value.slice(0, 200))}
           disabled={locked}
-          className="bg-background/50 resize-none h-24"
+          className="h-24 resize-none bg-background/50"
         />
-        <p className="text-xs text-muted-foreground mt-2 text-right">
-          {unexpected.length}/200
-        </p>
+        <p className="mt-2 text-right text-xs text-muted-foreground">{unexpected.length}/200</p>
       </section>
 
-      {/* Validation hints */}
       {!locked && !canSubmit && (
-        <div className="mb-4 text-xs text-muted-foreground space-y-1">
+        <div className="mb-4 space-y-1 text-xs text-muted-foreground">
           {!p1 && <p className="text-f1-warning">• Select a driver for P1</p>}
           {!p2 && <p className="text-f1-warning">• Select a driver for P2</p>}
           {!p3 && <p className="text-f1-warning">• Select a driver for P3</p>}
           {!pole && <p className="text-f1-warning">• Select pole position</p>}
           {!constructor && <p className="text-f1-warning">• Select a constructor</p>}
           {unexpected.length < 10 && (
-            <p className="text-f1-warning">
-              • Unexpected prediction needs at least 10 characters (
-              {unexpected.length}/10)
-            </p>
+            <p className="text-f1-warning">• Unexpected prediction needs at least 10 characters ({unexpected.length}/10)</p>
           )}
         </div>
       )}
 
-      {/* Submit */}
-      <Button
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-        className="w-full"
-        size="lg"
-      >
-        {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-        {locked
-          ? "Predictions Locked"
-          : loading
-            ? "Submitting..."
-            : `Submit ${isSprint ? "Sprint" : "Race"} Prediction`}
+      <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full" size="lg">
+        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {locked ? "Predictions Locked" : loading ? "Submitting..." : `Submit ${isSprint ? "Sprint" : "Race"} Prediction`}
       </Button>
     </>
   );

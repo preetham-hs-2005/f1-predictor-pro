@@ -17,10 +17,10 @@ const Index = () => {
 
   return (
     <PageShell>
-      <div className="container relative z-10 flex min-h-screen flex-col pb-16 pt-6">
-        <header className="flex items-center justify-between">
+      <div className="container relative z-10 flex min-h-screen flex-col pb-12 pt-4 sm:pb-16 sm:pt-6">
+        <header className="flex items-center justify-between gap-3">
           <BrandMark />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link to="/login">
               <Button variant="ghost" size="sm">
                 Sign In
@@ -32,12 +32,12 @@ const Index = () => {
           </div>
         </header>
 
-        <main className="flex flex-1 items-center py-10">
+        <main className="flex flex-1 items-center py-8 sm:py-10">
           <div className="mx-auto w-full max-w-6xl">
             <section className="hero-panel overflow-hidden">
               <div className="relative z-10">
                 <p className="page-eyebrow">Prediction League</p>
-                <h1 className="mt-4 max-w-4xl font-heading text-5xl leading-[0.95] text-white md:text-7xl">
+                <h1 className="mt-4 max-w-4xl font-heading text-4xl leading-[0.95] text-white sm:text-5xl md:text-7xl">
                   Predict every race.
                   <span className="block text-gradient-f1">Own the season.</span>
                 </h1>
@@ -46,21 +46,21 @@ const Index = () => {
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <Link to="/register">
-                    <Button size="lg" className="min-w-[220px]">
+                  <Link to="/register" className="w-full sm:w-auto">
+                    <Button size="lg" className="w-full sm:min-w-[220px]">
                       Join the Grid
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link to="/login">
-                    <Button variant="outline" size="lg" className="min-w-[220px]">
+                  <Link to="/login" className="w-full sm:w-auto">
+                    <Button variant="outline" size="lg" className="w-full sm:min-w-[220px]">
                       Sign In
                     </Button>
                   </Link>
                 </div>
 
                 <div className="mt-10 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="panel-subtle">
                       <Clock3 className="h-5 w-5 text-primary" />
                       <p className="mt-4 font-heading text-lg text-white">Lock timers</p>
@@ -71,7 +71,7 @@ const Index = () => {
                       <p className="mt-4 font-heading text-lg text-white">Leaderboard</p>
                       <p className="mt-2 text-sm leading-7 text-white/58">Track points and season momentum live.</p>
                     </div>
-                    <div className="panel-subtle">
+                    <div className="panel-subtle sm:col-span-2 lg:col-span-1">
                       <MessageSquareText className="h-5 w-5 text-primary" />
                       <p className="mt-4 font-heading text-lg text-white">Discussions</p>
                       <p className="mt-2 text-sm leading-7 text-white/58">Keep the race-weekend talk going.</p>
@@ -82,12 +82,16 @@ const Index = () => {
                     <p className="page-eyebrow">Why it works</p>
                     <div className="mt-4 space-y-4">
                       <div className="rounded-[1.25rem] border border-white/10 bg-black/10 px-4 py-4">
-                        <p className="font-heading text-xl text-white">Simple before login</p>
-                        <p className="mt-2 text-sm leading-7 text-white/60">A focused landing page that explains the product fast instead of stacking too many promo blocks.</p>
+                        <p className="font-heading text-lg text-white sm:text-xl">Simple before login</p>
+                        <p className="mt-2 text-sm leading-7 text-white/60">
+                          A focused landing page that explains the product fast instead of stacking too many promo blocks.
+                        </p>
                       </div>
                       <div className="rounded-[1.25rem] border border-white/10 bg-black/10 px-4 py-4">
-                        <p className="font-heading text-xl text-white">Built for your league</p>
-                        <p className="mt-2 text-sm leading-7 text-white/60">Predictions, standings, results, and community all stay connected under one identity.</p>
+                        <p className="font-heading text-lg text-white sm:text-xl">Built for your league</p>
+                        <p className="mt-2 text-sm leading-7 text-white/60">
+                          Predictions, standings, results, and community all stay connected under one identity.
+                        </p>
                       </div>
                     </div>
                   </div>

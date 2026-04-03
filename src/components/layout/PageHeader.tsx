@@ -29,7 +29,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <section className={cn("hero-panel", className)}>
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl space-y-4">
           {eyebrow && <p className="page-eyebrow">{eyebrow}</p>}
           <div className="space-y-3">
@@ -41,15 +41,15 @@ export function PageHeader({
           </div>
         </div>
 
-        {actions && <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>}
+        {actions && <div className="flex max-sm:w-full shrink-0 flex-wrap items-stretch gap-3">{actions}</div>}
       </div>
 
       {stats && stats.length > 0 && (
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((stat) => (
             <div key={stat.label} className="panel-subtle">
               <p className="text-[0.68rem] uppercase tracking-[0.28em] text-white/45">{stat.label}</p>
-              <p className="mt-3 font-heading text-2xl text-white">{stat.value}</p>
+              <p className="mt-3 font-heading text-xl text-white sm:text-2xl">{stat.value}</p>
             </div>
           ))}
         </div>

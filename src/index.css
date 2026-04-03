@@ -66,6 +66,7 @@
     @apply min-h-screen bg-background text-foreground antialiased;
     font-family: "Space Grotesk", sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
     background-image:
       radial-gradient(circle at top, rgba(255, 82, 61, 0.2), transparent 28%),
       radial-gradient(circle at 80% 12%, rgba(255, 124, 92, 0.12), transparent 22%),
@@ -135,7 +136,7 @@
   }
 
   .hero-panel {
-    @apply glass-strong relative overflow-hidden rounded-[2rem] px-6 py-8 md:px-8 md:py-10;
+    @apply glass-strong relative overflow-hidden rounded-[1.5rem] px-4 py-6 sm:px-6 sm:py-8 md:rounded-[2rem] md:px-8 md:py-10;
   }
 
   .hero-panel::before {
@@ -149,7 +150,7 @@
   }
 
   .panel-subtle {
-    @apply rounded-[1.5rem] border border-white/10 bg-white/[0.03] px-4 py-4 backdrop-blur-sm;
+    @apply rounded-[1.25rem] border border-white/10 bg-white/[0.03] px-4 py-4 backdrop-blur-sm md:rounded-[1.5rem];
   }
 
   .page-eyebrow {
@@ -158,7 +159,7 @@
   }
 
   .page-title {
-    @apply font-heading text-3xl leading-tight text-white md:text-5xl;
+    @apply font-heading text-2xl leading-tight text-white sm:text-3xl md:text-5xl;
   }
 
   .page-subtitle {
@@ -167,7 +168,7 @@
   }
 
   .section-card {
-    @apply glass rounded-[1.75rem] p-5 md:p-6;
+    @apply glass rounded-[1.4rem] p-4 sm:p-5 md:rounded-[1.75rem] md:p-6;
   }
 
   .badge-signal {
