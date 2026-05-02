@@ -222,7 +222,7 @@ function PollComponent({
                     </div>
                     <div className="h-2 bg-gray-800 rounded overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 transition-all"
+                        className="h-full bg-primary transition-all"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -254,7 +254,7 @@ function PollComponent({
                     </div>
                     <div className="h-2 bg-gray-800 rounded overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 transition-all"
+                        className="h-full bg-primary transition-all"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>

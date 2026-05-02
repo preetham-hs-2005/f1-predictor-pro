@@ -1,22 +1,30 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Lock, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { type RaceWeekend } from "@/lib/data/raceCalendar";
-import { useDrivers } from "@/hooks/useDrivers";
-import { submitPrediction, getUserPrediction } from "@/lib/api/predictions";
+import { CockpitPanel } from "@/components/layout/CockpitPanel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDrivers } from "@/hooks/useDrivers";
+import { getUserPrediction, submitPrediction } from "@/lib/api/predictions";
+import { type RaceWeekend } from "@/lib/data/raceCalendar";
+import { cn } from "@/lib/utils";
 
 interface PredictionFormProps {
   race: RaceWeekend;
   type: "sprint" | "race";
   locked: boolean;
 }
+
+const slots = [
+  { key: "p1", label: "P1", points: 25 },
+  { key: "p2", label: "P2", points: 20 },
+  { key: "p3", label: "P3", points: 15 },
+] as const;
 
 const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
   const { user } = useAuth();
@@ -32,15 +40,14 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
   const [initializing, setInitializing] = useState(true);
 
   const { drivers, isLoading: loadingDrivers } = useDrivers();
-  const teamsWithColors = Array.from(new Set(drivers.map((d) => d.team)))
-    .sort()
-    .map((team) => {
-      const driver = drivers.find((d) => d.team === team);
-      return { team, color: driver?.teamColor || "#FFFFFF" };
-    });
+  const teamsWithColors = useMemo(
+    () => Array.from(new Set(drivers.map((d) => d.team))).sort().map((team) => ({ team })),
+    [drivers],
+  );
 
   const isSprint = type === "sprint";
   const pointMultiplier = isSprint ? 0.5 : 1;
+  const picks = { p1, p2, p3 };
 
   useEffect(() => {
     const loadPrediction = async () => {
@@ -56,7 +63,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         setConstructor(prediction.predictedConstructor || "");
         setUnexpected(prediction.unexpectedStatement);
       } catch {
-        // No existing prediction
+        // No existing prediction.
       } finally {
         setInitializing(false);
       }
@@ -66,6 +73,14 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
   }, [race.id, type, user]);
 
   const canSubmit = p1 && p2 && p3 && pole && constructor && unexpected.length >= 10 && !locked && !loading;
+  const filled = [p1, p2, p3, pole, constructor].filter(Boolean).length;
+  const estimatedPoints = (25 + 20 + 15 + 20 + 10 + 15) * pointMultiplier;
+
+  const driverName = (id: string) => drivers.find((driver) => driver.id === id)?.name ?? "Unassigned";
+  const driverMeta = (id: string) => {
+    const driver = drivers.find((d) => d.id === id);
+    return driver ? `#${driver.number} / ${driver.team}` : "SELECT FROM GRID";
+  };
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -77,7 +92,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
     }
 
     if (unexpected.length < 10 || unexpected.length > 200) {
-      toast.error("Unexpected prediction must be 10-200 characters");
+      toast.error("Unexpected pick must be 10-200 characters");
       return;
     }
 
@@ -94,7 +109,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
         unexpectedStatement: unexpected,
       });
 
-      toast.success(`${isSprint ? "Sprint" : "Race"} prediction submitted!`);
+      toast.success(`${isSprint ? "Sprint" : "Race"} prediction submitted`);
       navigate("/dashboard");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to submit prediction";
@@ -106,173 +121,161 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
 
   if (initializing || loadingDrivers) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-10">
+        <Loader2 className="h-8 w-8 animate-spin text-signal" />
       </div>
     );
   }
 
   return (
-    <>
-      <section className="glass mb-6 rounded-xl p-4 sm:p-6 animate-slide-up">
-        <h2 className="f1-heading mb-6 flex items-center gap-2 text-sm text-muted-foreground">
-          <Trophy className="h-4 w-4 text-f1-gold" />
-          Podium Prediction
-        </h2>
+    <div className="grid gap-6 xl:grid-cols-12">
+      <CockpitPanel
+        className="xl:col-span-7"
+        code="PRD.A"
+        title="Finishing order"
+        action={<span className="data-mono text-[10px] text-muted-foreground">{filled}/5 REQUIRED</span>}
+        corners
+      >
+        <div className="divide-y divide-border">
+          {slots.map((slot, index) => {
+            const value = picks[slot.key];
+            const selected = [p1, p2, p3].filter(Boolean);
+            return (
+              <div key={slot.key} className={cn("grid gap-3 px-4 py-4 md:grid-cols-12 md:items-center", index === 0 && "bg-signal/5")}>
+                <div className="flex items-center gap-3 md:col-span-2">
+                  <span className="data-mono text-3xl font-bold text-white">{slot.label}</span>
+                  <span className="data-mono text-[10px] text-signal">+{slot.points * pointMultiplier} PTS</span>
+                </div>
+                <div className="min-w-0 md:col-span-5">
+                  <div className="display truncate text-base font-semibold text-white">{value ? driverName(value) : "Empty slot"}</div>
+                  <div className="data-mono mt-1 truncate text-[10px] uppercase text-muted-foreground">{value ? driverMeta(value) : "SELECT FROM DRIVER LIST"}</div>
+                </div>
+                <div className="md:col-span-5">
+                  <Select
+                    value={value}
+                    onValueChange={slot.key === "p1" ? setP1 : slot.key === "p2" ? setP2 : setP3}
+                    disabled={locked}
+                  >
+                    <SelectTrigger className="h-11 rounded-sm border-border bg-input data-mono">
+                      <SelectValue placeholder={`Select ${slot.label}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {drivers
+                        .filter((driver) => driver.id === value || !selected.includes(driver.id))
+                        .map((driver) => (
+                          <SelectItem key={driver.id} value={driver.id}>
+                            <span className="flex items-center gap-2">
+                              <span className="h-2 w-2 shrink-0 bg-signal" />
+                              #{driver.number} {driver.name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-        <div className="mb-6 grid gap-3 sm:grid-cols-3 sm:items-end">
-          <div className="order-2 flex w-full flex-col items-center sm:order-1 sm:max-w-[180px]">
-            <span className="f1-heading mb-2 text-xs text-muted-foreground">P2</span>
-            <div className="glass podium-silver flex h-28 w-full items-center justify-center rounded-lg border-2 p-2 sm:h-40">
-              <Select value={p2} onValueChange={setP2} disabled={locked}>
-                <SelectTrigger className="border-none bg-transparent text-center">
-                  <SelectValue placeholder="Select P2" />
+        <div className="border-t border-border bg-surface-2/35 p-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label className="label-eyebrow mb-2 block">{isSprint ? "Sprint pole" : "Pole position"} / +{10 * pointMultiplier} pts</Label>
+              <Select value={pole} onValueChange={setPole} disabled={locked}>
+                <SelectTrigger className="h-11 rounded-sm border-border bg-input data-mono">
+                  <SelectValue placeholder="Select pole position" />
                 </SelectTrigger>
                 <SelectContent>
-                  {drivers
-                    .filter((d) => d.id !== p1 && d.id !== p3)
-                    .map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        <span className="flex items-center gap-2">
-                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: d.teamColor }} />
-                          {d.name}
-                        </span>
-                      </SelectItem>
-                    ))}
+                  {drivers.map((driver) => (
+                    <SelectItem key={driver.id} value={driver.id}>
+                      #{driver.number} {driver.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div className="order-1 flex w-full flex-col items-center sm:order-2 sm:max-w-[200px]">
-            <span className="f1-heading mb-2 text-xs text-muted-foreground">P1</span>
-            <div className="glass podium-gold flex h-32 w-full items-center justify-center rounded-lg border-2 p-2 sm:h-52">
-              <Select value={p1} onValueChange={setP1} disabled={locked}>
-                <SelectTrigger className="border-none bg-transparent text-center">
-                  <SelectValue placeholder="Select P1" />
+            <div>
+              <Label className="label-eyebrow mb-2 block">Top constructor / +{10 * pointMultiplier} pts</Label>
+              <Select value={constructor} onValueChange={setConstructor} disabled={locked}>
+                <SelectTrigger className="h-11 rounded-sm border-border bg-input data-mono">
+                  <SelectValue placeholder="Select team" />
                 </SelectTrigger>
                 <SelectContent>
-                  {drivers
-                    .filter((d) => d.id !== p2 && d.id !== p3)
-                    .map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        <span className="flex items-center gap-2">
-                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: d.teamColor }} />
-                          {d.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="order-3 flex w-full flex-col items-center sm:max-w-[180px]">
-            <span className="f1-heading mb-2 text-xs text-muted-foreground">P3</span>
-            <div className="glass podium-bronze flex h-24 w-full items-center justify-center rounded-lg border-2 p-2 sm:h-32">
-              <Select value={p3} onValueChange={setP3} disabled={locked}>
-                <SelectTrigger className="border-none bg-transparent text-center">
-                  <SelectValue placeholder="Select P3" />
-                </SelectTrigger>
-                <SelectContent>
-                  {drivers
-                    .filter((d) => d.id !== p1 && d.id !== p2)
-                    .map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        <span className="flex items-center gap-2">
-                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: d.teamColor }} />
-                          {d.name}
-                        </span>
-                      </SelectItem>
-                    ))}
+                  {teamsWithColors.map((team) => (
+                    <SelectItem key={team.team} value={team.team}>
+                      {team.team}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
+      </CockpitPanel>
 
-        <div className="flex flex-wrap justify-center gap-4 text-center text-xs text-muted-foreground">
-          <span>P1: {25 * pointMultiplier}pts</span>
-          <span>P2: {20 * pointMultiplier}pts</span>
-          <span>P3: {15 * pointMultiplier}pts</span>
-          <span>Exact podium: +{20 * pointMultiplier}pts</span>
-        </div>
-      </section>
+      <div className="space-y-6 xl:col-span-5">
+        <CockpitPanel
+          code="BRF.B"
+          title="Race brief"
+          action={<Trophy className="h-4 w-4 text-signal" />}
+          bodyClassName="p-4"
+          corners
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="panel-subtle">
+                <p className="label-eyebrow">Round</p>
+                <p className="data-mono mt-2 text-2xl font-bold text-white">R{race.round}</p>
+              </div>
+              <div className="panel-subtle">
+                <p className="label-eyebrow">Mode</p>
+                <p className="data-mono mt-2 text-2xl font-bold text-white">{isSprint ? "SPR" : "GP"}</p>
+              </div>
+            </div>
+            <div className="panel-subtle">
+              <p className="label-eyebrow">Potential yield</p>
+              <p className="data-mono mt-2 text-3xl font-bold text-signal">+{estimatedPoints}</p>
+              <p className="data-mono mt-1 text-[10px] text-muted-foreground">BASELINE MAX BEFORE BONUS SCORING</p>
+            </div>
+            <div className="flex items-center gap-2 border border-border bg-surface-2 px-3 py-2 data-mono text-[10px] text-muted-foreground">
+              <CheckCircle2 className="h-3.5 w-3.5 text-signal" />
+              Duplicate podium drivers are blocked before submit.
+            </div>
+          </div>
+        </CockpitPanel>
 
-      <section className="glass mb-6 rounded-xl p-4 sm:p-6 animate-slide-up">
-        <Label className="f1-heading mb-3 block text-sm text-muted-foreground">
-          {isSprint ? "Sprint Pole" : "Pole Position"} • {10 * pointMultiplier}pts
-        </Label>
-        <Select value={pole} onValueChange={setPole} disabled={locked}>
-          <SelectTrigger className="bg-background/50">
-            <SelectValue placeholder="Select pole position" />
-          </SelectTrigger>
-          <SelectContent>
-            {drivers.map((d) => (
-              <SelectItem key={d.id} value={d.id}>
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: d.teamColor }} />
-                  #{d.number} {d.name}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </section>
+        <CockpitPanel code="XPC.C" title="Unexpected pick" bodyClassName="p-4">
+          <Label className="label-eyebrow mb-2 block">Scenario / +{15 * pointMultiplier} pts</Label>
+          <Textarea
+            placeholder="Example: Albon finishes in the top 5."
+            value={unexpected}
+            onChange={(event) => setUnexpected(event.target.value.slice(0, 200))}
+            disabled={locked}
+            className="h-32 resize-none rounded-sm border-border bg-input data-mono text-sm"
+          />
+          <p className="data-mono mt-2 text-right text-xs text-muted-foreground">{unexpected.length}/200</p>
+        </CockpitPanel>
 
-      <section className="glass mb-6 rounded-xl p-4 sm:p-6 animate-slide-up">
-        <Label className="f1-heading mb-3 block text-sm text-muted-foreground">
-          Highest Scoring Constructor • {10 * pointMultiplier}pts
-        </Label>
-        <Select value={constructor} onValueChange={setConstructor} disabled={locked}>
-          <SelectTrigger className="bg-background/50">
-            <SelectValue placeholder="Select team" />
-          </SelectTrigger>
-          <SelectContent>
-            {teamsWithColors.map((t) => (
-              <SelectItem key={t.team} value={t.team}>
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: t.color }} />
-                  {t.team}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </section>
+        {!locked && !canSubmit && (
+          <div className="panel border-warning/30 bg-warning/10 p-4 data-mono text-xs text-warning">
+            {!p1 && <p>Select a driver for P1</p>}
+            {!p2 && <p>Select a driver for P2</p>}
+            {!p3 && <p>Select a driver for P3</p>}
+            {!pole && <p>Select pole position</p>}
+            {!constructor && <p>Select a constructor</p>}
+            {unexpected.length < 10 && <p>Unexpected pick needs at least 10 characters ({unexpected.length}/10)</p>}
+          </div>
+        )}
 
-      <section className="glass mb-8 rounded-xl p-4 sm:p-6 animate-slide-up">
-        <Label className="f1-heading mb-3 block text-sm text-muted-foreground">
-          Expect the Unexpected • {15 * pointMultiplier}pts
-        </Label>
-        <Textarea
-          placeholder="e.g., Albon will finish in top 5, Hamilton and Verstappen will both DNF"
-          value={unexpected}
-          onChange={(e) => setUnexpected(e.target.value.slice(0, 200))}
-          disabled={locked}
-          className="h-24 resize-none bg-background/50"
-        />
-        <p className="mt-2 text-right text-xs text-muted-foreground">{unexpected.length}/200</p>
-      </section>
-
-      {!locked && !canSubmit && (
-        <div className="mb-4 space-y-1 text-xs text-muted-foreground">
-          {!p1 && <p className="text-f1-warning">• Select a driver for P1</p>}
-          {!p2 && <p className="text-f1-warning">• Select a driver for P2</p>}
-          {!p3 && <p className="text-f1-warning">• Select a driver for P3</p>}
-          {!pole && <p className="text-f1-warning">• Select pole position</p>}
-          {!constructor && <p className="text-f1-warning">• Select a constructor</p>}
-          {unexpected.length < 10 && (
-            <p className="text-f1-warning">• Unexpected prediction needs at least 10 characters ({unexpected.length}/10)</p>
-          )}
-        </div>
-      )}
-
-      <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full" size="lg">
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {locked ? "Predictions Locked" : loading ? "Submitting..." : `Submit ${isSprint ? "Sprint" : "Race"} Prediction`}
-      </Button>
-    </>
+        <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full" size="lg" variant="signal">
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Lock className="h-4 w-4" />
+          {locked ? "Predictions locked" : loading ? "Submitting..." : `Submit ${isSprint ? "sprint" : "race"} prediction`}
+        </Button>
+      </div>
+    </div>
   );
 };
 

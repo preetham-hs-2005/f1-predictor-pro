@@ -20,12 +20,12 @@ const NotFound = () => {
             <BrandMark compact />
           </div>
           <p className="page-eyebrow mt-8">404</p>
-          <h1 className="mt-4 font-heading text-5xl text-white">Page not found</h1>
-          <p className="mt-4 text-base leading-8 text-white/62">
-            The route <span className="text-white">{location.pathname}</span> doesn’t exist in the current grid.
+          <h1 className="mt-4 text-5xl font-semibold text-white">Page not found</h1>
+          <p className="mt-4 text-base leading-7 text-muted-foreground">
+            The route <span className="text-white">{location.pathname}</span> does not exist.
           </p>
           <Link to="/" className="mt-8 inline-flex">
-            <Button size="lg">Return Home</Button>
+            <Button size="lg">Return home</Button>
           </Link>
         </div>
       </div>

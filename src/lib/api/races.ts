@@ -17,6 +17,7 @@ export interface ServerRace {
   timeZone: string;
   sprintWeekend: boolean;
   sprintQualifyingStartTime?: string | null;
+  sprintStartTime?: string | null;
   cancelled: boolean;
   isLocked?: boolean;
   isComplete?: boolean;

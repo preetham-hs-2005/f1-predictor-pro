@@ -49,7 +49,7 @@ export function EditProfileModal({ isOpen, onOpenChange }: EditProfileModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-card/95 backdrop-blur-md border-primary/20">
+      <DialogContent className="sm:max-w-[425px] border-primary/20 bg-card">
         <DialogHeader>
           <div className="flex items-center gap-4 mb-2">
             <Avatar className="h-12 w-12 border-2 border-primary/20">

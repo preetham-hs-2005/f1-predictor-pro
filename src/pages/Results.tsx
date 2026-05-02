@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Loader, ShieldCheck } from "lucide-react";
+import { AlertCircle, Flag, Loader, ShieldCheck, Trophy, Zap } from "lucide-react";
 
+import { CockpitPanel } from "@/components/layout/CockpitPanel";
 import Navbar from "@/components/layout/Navbar";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { PageShell } from "@/components/layout/PageShell";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,7 @@ import { useDrivers } from "@/hooks/useDrivers";
 import { apiClient } from "@/lib/api/client";
 import { getAllRaces } from "@/lib/api/races";
 import { type RaceWeekend } from "@/lib/data/raceCalendar";
+import { cn } from "@/lib/utils";
 
 interface RaceResult {
   id: string;
@@ -19,10 +20,10 @@ interface RaceResult {
   p2: string;
   p3: string;
   pole: string;
-  fastestLap: string;
-  dnfCount: number;
-  safetyCars: number;
-  redFlags: number;
+  fastestLap?: string;
+  dnfCount?: number;
+  safetyCars?: number;
+  redFlags?: number;
   bestConstructor?: string;
   isOfficial: boolean;
 }
@@ -31,6 +32,10 @@ const Results = () => {
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const { drivers } = useDrivers();
   const [races, setRaces] = useState<RaceWeekend[]>([]);
+  const [selectedRaceId, setSelectedRaceId] = useState<string>("");
+  const [results, setResults] = useState<RaceResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const getDriverName = (id?: string) => {
     if (!id) return "TBC";
@@ -40,14 +45,8 @@ const Results = () => {
 
   const now = new Date();
   const completedRaces = races
-    .filter((r) => !r.cancelled && new Date(r.raceStartTime) < now)
+    .filter((race) => !race.cancelled && new Date(race.raceStartTime) < now)
     .sort((a, b) => a.round - b.round);
-
-  const [selectedRaceId, setSelectedRaceId] = useState<string>("");
-
-  const [results, setResults] = useState<RaceResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRaces = async () => {
@@ -63,6 +62,7 @@ const Results = () => {
         raceStartTime: race.raceStartTime,
         sprintWeekend: race.sprintWeekend,
         sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+        sprintStartTime: race.sprintStartTime,
         timeZone: race.timeZone,
         isLocked: race.isLocked || false,
         isComplete: race.isComplete || false,
@@ -71,7 +71,7 @@ const Results = () => {
       setRaces(converted);
 
       const completed = converted
-        .filter((r) => !r.cancelled && new Date(r.raceStartTime) < new Date())
+        .filter((race) => !race.cancelled && new Date(race.raceStartTime) < new Date())
         .sort((a, b) => a.round - b.round);
       if (!selectedRaceId && completed.length > 0) {
         setSelectedRaceId(completed[completed.length - 1].id);
@@ -105,149 +105,184 @@ const Results = () => {
     fetchResults();
   }, [selectedRaceId, isAuthenticated, authIsLoading]);
 
-  const selectedRace = races.find((r) => r.id === selectedRaceId);
-  const selectedRaceName = selectedRace?.raceName;
+  const selectedRace = races.find((race) => race.id === selectedRaceId);
+  const primaryResult = results.find((result) => result.type === "race") || results[0];
 
   return (
     <PageShell>
       <Navbar />
-      <main className="container pb-12 pt-24 md:pt-32">
-        <PageHeader
-          eyebrow="Official data"
-          title="Race results archive"
-          description="Browse completed weekends with a cleaner split between the event selector and the published official results."
-          badge="Verified"
-          stats={[
-            { label: "Completed races", value: `${completedRaces.length}` },
-            { label: "Selected event", value: selectedRaceName || "None" },
-            { label: "Official cards", value: `${results.length}` },
-            { label: "Season", value: "2026" },
-          ]}
-        />
+      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+        <section className="panel panel-corners overflow-hidden">
+          <div className="relative p-5 sm:p-7 lg:p-8">
+            <div className="checker absolute right-0 top-0 h-72 w-72 opacity-[0.05]" />
+            <div className="relative grid gap-8 xl:grid-cols-[1fr_420px] xl:items-end">
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="label-eyebrow">Classification board</span>
+                  <span className="h-px w-16 bg-border" />
+                  <Badge className="badge-signal">{completedRaces.length} completed</Badge>
+                </div>
+                <h1 className="display mt-7 max-w-4xl text-5xl font-bold leading-[0.95] text-white sm:text-7xl">
+                  Results Control
+                </h1>
+                <p className="data-mono mt-5 max-w-2xl text-sm uppercase leading-6 text-muted-foreground">
+                  Pick a completed round and inspect the official podium, pole, constructor, and race notes.
+                </p>
+              </div>
+              <div className="border border-border bg-surface-2/40 p-5">
+                <p className="label-eyebrow">Selected event</p>
+                <p className="display mt-3 truncate text-3xl font-bold text-white">
+                  {selectedRace ? `${selectedRace.countryFlag} ${selectedRace.raceName}` : "None"}
+                </p>
+                <p className="data-mono mt-2 truncate text-xs uppercase text-muted-foreground">
+                  {selectedRace ? `R${selectedRace.round} / ${selectedRace.circuitName}` : "No completed race selected"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {authIsLoading ? (
           <section className="section-card mt-8 flex min-h-[360px] flex-col items-center justify-center">
-            <Loader className="mb-4 h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Authenticating...</p>
+            <Loader className="mb-4 h-8 w-8 animate-spin text-signal" />
+            <p className="data-mono text-muted-foreground">Checking session...</p>
           </section>
         ) : completedRaces.length === 0 ? (
           <section className="section-card mt-8 text-center">
-            <p className="font-heading text-2xl text-white">No completed races yet</p>
-            <p className="mt-3 text-sm text-white/60">Results will appear here once the season gets underway.</p>
+            <p className="display text-2xl font-semibold text-white">No completed races yet</p>
+            <p className="data-mono mt-3 text-sm text-white/60">Results will appear after completed races.</p>
           </section>
         ) : (
-          <section className="mt-8 grid gap-4 xl:grid-cols-[300px_1fr]">
-            <aside className="section-card h-fit">
-              <p className="page-eyebrow">Race picker</p>
-              <h2 className="mt-2 font-heading text-2xl text-white">Completed weekends</h2>
-              <div className="mt-6 space-y-2">
+          <>
+            <section className="mt-8 overflow-x-auto border border-border bg-surface-1">
+              <div className="flex min-w-max divide-x divide-border">
                 {completedRaces.map((race) => (
                   <button
                     key={race.id}
                     onClick={() => setSelectedRaceId(race.id)}
-                    className={`w-full rounded-[1.25rem] border px-4 py-4 text-left transition-all ${
-                      selectedRaceId === race.id
-                        ? "border-primary/25 bg-primary/10 shadow-[0_18px_45px_rgba(255,107,62,0.18)]"
-                        : "border-white/8 bg-white/[0.03] hover:border-white/14 hover:bg-white/[0.05]"
-                    }`}
+                    className={cn(
+                      "w-64 px-4 py-4 text-left transition-colors hover:bg-surface-2/60",
+                      selectedRaceId === race.id && "bg-signal/10",
+                    )}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-2xl">
-                        {race.countryFlag}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate font-heading text-base text-white">{race.raceName}</p>
-                        <p className="text-sm text-white/45">Round {race.round}</p>
-                      </div>
-                    </div>
+                    <p className="data-mono text-xs text-muted-foreground">R{race.round}</p>
+                    <p className="mt-2 text-3xl">{race.countryFlag}</p>
+                    <p className="display mt-2 truncate text-lg font-semibold text-white">{race.raceName}</p>
                   </button>
                 ))}
               </div>
-            </aside>
+            </section>
 
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="section-card flex min-h-[360px] flex-col items-center justify-center">
-                  <Loader className="mb-4 h-8 w-8 animate-spin text-primary" />
-                  <p className="text-muted-foreground">Loading official results...</p>
-                </div>
-              ) : selectedRace?.cancelled ? (
-                <div className="section-card border border-destructive/20 bg-destructive/10 text-center">
-                  <p className="font-heading text-2xl text-destructive">This race was cancelled.</p>
-                </div>
-              ) : error ? (
-                <div className="section-card border border-destructive/20 bg-destructive/10">
-                  <div className="flex items-start gap-4">
-                    <AlertCircle className="h-6 w-6 shrink-0 text-destructive" />
-                    <div>
-                      <h3 className="font-heading text-xl text-destructive">Failed to load results</h3>
-                      <p className="mt-2 text-sm text-white/65">{error}</p>
+            <section className="mt-8 grid gap-6 xl:grid-cols-[1fr_420px]">
+              <CockpitPanel
+                code="CLS.01"
+                title="Official classification"
+                action={
+                  primaryResult?.isOfficial && (
+                    <Badge className="border-signal/30 bg-signal/10 text-signal">
+                      <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
+                      Official
+                    </Badge>
+                  )
+                }
+                corners
+              >
+                {isLoading ? (
+                  <div className="flex min-h-[360px] flex-col items-center justify-center">
+                    <Loader className="mb-4 h-8 w-8 animate-spin text-signal" />
+                    <p className="data-mono text-muted-foreground">Loading results...</p>
+                  </div>
+                ) : selectedRace?.cancelled ? (
+                  <div className="m-5 border border-destructive/20 bg-destructive/10 p-6 text-center">
+                    <p className="display text-2xl font-semibold text-destructive">This race was cancelled.</p>
+                  </div>
+                ) : error ? (
+                  <div className="m-5 border border-destructive/20 bg-destructive/10 p-5">
+                    <div className="flex items-start gap-4">
+                      <AlertCircle className="h-6 w-6 shrink-0 text-destructive" />
+                      <div>
+                        <h3 className="display text-xl font-semibold text-destructive">Failed to load results</h3>
+                        <p className="data-mono mt-2 text-sm text-white/65">{error}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : results.length === 0 ? (
-                <div className="section-card flex min-h-[320px] items-center justify-center text-center">
-                  <p className="text-white/60">No official results have been published for {selectedRaceName} yet.</p>
-                </div>
-              ) : (
-                results.map((result) => (
-                  <article key={result.id} className="section-card overflow-hidden">
-                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
-                      <div>
-                        <p className="page-eyebrow">{result.type === "sprint" ? "Sprint session" : "Grand Prix"}</p>
-                        <h2 className="mt-2 font-heading text-2xl text-white">{selectedRaceName}</h2>
-                      </div>
-                      {result.isOfficial && (
-                        <Badge className="rounded-full border border-emerald-400/20 bg-emerald-400/12 px-4 py-1.5 text-[0.7rem] uppercase tracking-[0.22em] text-emerald-300">
-                          <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
-                          Official
-                        </Badge>
-                      )}
-                    </div>
+                ) : results.length === 0 ? (
+                  <div className="flex min-h-[320px] items-center justify-center p-8 text-center">
+                    <p className="data-mono text-white/60">No results have been published for {selectedRace?.raceName}.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {results.map((result) => (
+                      <article key={result.id} className="p-5">
+                        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <Badge variant="outline" className={result.type === "sprint" ? "border-warning/30 bg-warning/10 text-warning" : "border-signal/30 bg-signal/10 text-signal"}>
+                              {result.type === "sprint" ? <Zap className="mr-1 h-3 w-3" /> : <Flag className="mr-1 h-3 w-3" />}
+                              {result.type}
+                            </Badge>
+                            <h2 className="display mt-3 text-2xl font-bold text-white">{selectedRace?.raceName}</h2>
+                          </div>
+                        </div>
 
-                    <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                      <div className="panel-subtle">
-                        <p className="page-eyebrow">Podium</p>
-                        <div className="mt-4 grid gap-3">
-                          <div className="flex items-center gap-3 rounded-2xl border border-f1-gold/20 bg-f1-gold/10 px-4 py-3">
-                            <span className="text-2xl">🥇</span>
-                            <span className="font-semibold text-f1-gold">{getDriverName(result.p1)}</span>
-                          </div>
-                          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3">
-                            <span className="text-2xl">🥈</span>
-                            <span className="font-semibold text-white/88">{getDriverName(result.p2)}</span>
-                          </div>
-                          <div className="flex items-center gap-3 rounded-2xl border border-f1-bronze/20 bg-f1-bronze/10 px-4 py-3">
-                            <span className="text-2xl">🥉</span>
-                            <span className="font-semibold text-f1-bronze">{getDriverName(result.p3)}</span>
-                          </div>
+                        <div className="grid gap-3 md:grid-cols-3">
+                          {[
+                            ["P1", result.p1, "border-signal/50 bg-signal/10 text-signal"],
+                            ["P2", result.p2, "border-f1-silver/40 bg-white/5 text-white"],
+                            ["P3", result.p3, "border-f1-bronze/40 bg-f1-bronze/10 text-f1-bronze"],
+                          ].map(([label, driver, classes]) => (
+                            <div key={label} className={cn("border p-4", classes)}>
+                              <p className="data-mono text-xs font-bold">{label}</p>
+                              <p className="display mt-4 truncate text-2xl font-bold text-white">{getDriverName(driver)}</p>
+                            </div>
+                          ))}
                         </div>
-                      </div>
 
-                      <div className="grid gap-3">
-                        <div className="panel-subtle">
-                          <p className="page-eyebrow">Pole</p>
-                          <p className="mt-3 font-heading text-xl text-white">{getDriverName(result.pole)}</p>
-                        </div>
-                        <div className="panel-subtle">
-                          <p className="page-eyebrow">Best constructor</p>
-                          <p className="mt-3 font-heading text-xl text-white">{result.bestConstructor || "TBC"}</p>
-                        </div>
-                        <div className="panel-subtle">
-                          <p className="page-eyebrow">Race notes</p>
-                          <div className="mt-3 grid gap-2 text-sm text-white/65">
-                            <p className="flex items-center justify-between"><span>Safety cars</span><span>{result.safetyCars}</span></p>
-                            <p className="flex items-center justify-between"><span>Red flags</span><span>{result.redFlags}</span></p>
-                            <p className="flex items-center justify-between"><span>DNFs</span><span>{result.dnfCount}</span></p>
+                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                          <div className="border border-border bg-surface-2/50 p-4">
+                            <p className="label-eyebrow">Pole position</p>
+                            <p className="display mt-3 text-xl font-semibold text-white">{getDriverName(result.pole)}</p>
+                          </div>
+                          <div className="border border-border bg-surface-2/50 p-4">
+                            <p className="label-eyebrow">Best constructor</p>
+                            <p className="display mt-3 text-xl font-semibold text-white">{result.bestConstructor || "TBC"}</p>
                           </div>
                         </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </CockpitPanel>
+
+              <aside className="space-y-6">
+                <CockpitPanel code="NOTES" title="Race notes" bodyClassName="p-4" corners>
+                  <div className="grid gap-3">
+                    {[
+                      ["Safety cars", primaryResult?.safetyCars ?? 0],
+                      ["Red flags", primaryResult?.redFlags ?? 0],
+                      ["DNFs", primaryResult?.dnfCount ?? 0],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-center justify-between border border-border bg-surface-2/50 px-4 py-3">
+                        <span className="label-eyebrow">{label}</span>
+                        <span className="data-mono text-xl font-bold text-white">{value}</span>
                       </div>
+                    ))}
+                  </div>
+                </CockpitPanel>
+
+                <CockpitPanel code="POD" title="Winner signal" bodyClassName="p-5">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center border border-signal bg-signal/10 text-signal">
+                      <Trophy className="h-8 w-8" />
                     </div>
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
+                    <div className="min-w-0">
+                      <p className="label-eyebrow">Classified P1</p>
+                      <p className="display mt-2 truncate text-2xl font-bold text-white">{getDriverName(primaryResult?.p1)}</p>
+                    </div>
+                  </div>
+                </CockpitPanel>
+              </aside>
+            </section>
+          </>
         )}
       </main>
     </PageShell>

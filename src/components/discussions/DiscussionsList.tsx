@@ -11,12 +11,12 @@ interface DiscussionsListProps {
 }
 
 const CATEGORIES = [
-  { value: "all", label: "All Categories" },
+  { value: "all", label: "All categories" },
   { value: "general", label: "General" },
   { value: "technical", label: "Technical" },
-  { value: "race-specific", label: "Race Specific" },
+  { value: "race-specific", label: "Race specific" },
   { value: "predictions", label: "Predictions" },
-  { value: "off-topic", label: "Off Topic" },
+  { value: "off-topic", label: "Off topic" },
 ];
 
 function DiscussionsList({ onSelectDiscussion }: DiscussionsListProps) {
@@ -61,11 +61,11 @@ function DiscussionsList({ onSelectDiscussion }: DiscussionsListProps) {
       <div className="space-y-3">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-[1.5rem] bg-white/[0.06]" />
+            <Skeleton key={i} className="h-32 w-full rounded-lg bg-muted" />
           ))
         ) : filteredDiscussions.length === 0 ? (
-          <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] py-12 text-center">
-            <p className="text-white/55">No discussions found. Be the first to create one!</p>
+          <div className="rounded-lg border border-border bg-muted py-12 text-center">
+            <p className="text-white/55">No discussions found.</p>
           </div>
         ) : (
           filteredDiscussions.map((discussion) => (

@@ -48,7 +48,7 @@ const CountdownTimer = ({ targetDate, className = "" }: CountdownTimerProps) => 
 
   if (timeLeft === "LOCKED") {
     return (
-      <span className={`text-primary font-bold uppercase tracking-wider text-sm ${className}`}>
+      <span className={`text-sm font-bold text-primary ${className}`}>
         Locked
       </span>
     );

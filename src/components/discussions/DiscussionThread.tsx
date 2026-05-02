@@ -81,7 +81,7 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
       if (newPoll) {
         toast({
           title: "Success",
-          description: "Poll created successfully!",
+          description: "Poll created",
         });
       }
     } finally {
@@ -91,7 +91,7 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
 
   const handleDeleteDiscussion = async () => {
     if (!discussion) return;
-    if (!window.confirm("Are you sure you want to delete this discussion? All messages and polls will be deleted.")) {
+    if (!window.confirm("Delete this discussion and all messages?")) {
       return;
     }
 
@@ -107,14 +107,14 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
   };
 
   if (loading) {
-    return <Skeleton className="h-96 w-full rounded-[2rem] bg-white/[0.06]" />;
+    return <Skeleton className="h-96 w-full rounded-lg bg-muted" />;
   }
 
   if (error || !discussion) {
     return (
       <div className="section-card py-8 text-center">
         <p className="mb-4 text-destructive">{error || "Discussion not found"}</p>
-        <Button onClick={onBack}>Back to Discussions</Button>
+        <Button onClick={onBack}>Back to discussions</Button>
       </div>
     );
   }
@@ -125,17 +125,17 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
 
   return (
     <div className="flex h-full flex-col items-center">
-      <div className="glass-strong flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-white/10">
-        <div className="flex-shrink-0 border-b border-white/10 bg-white/[0.03] px-5 py-5">
+      <div className="glass-strong flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-border">
+        <div className="flex-shrink-0 border-b border-border bg-muted px-5 py-5">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <Button variant="ghost" onClick={onBack} className="mb-2 -ml-3 gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Button>
-              <h2 className="font-heading text-2xl text-white">{discussion.title}</h2>
-              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/38">
-                {discussion.userName} • {new Date(discussion.createdAt).toLocaleDateString()} • {discussion.views} views
+              <h2 className="text-2xl font-semibold text-white">{discussion.title}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {discussion.userName} · {new Date(discussion.createdAt).toLocaleDateString()} · {discussion.views} views
               </p>
             </div>
             {canDelete && (
@@ -152,15 +152,15 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
           </div>
         </div>
 
-        <div className="border-b border-white/10 bg-white/[0.02] px-5 py-4">
-          <p className="max-h-20 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-7 text-white/72">
+        <div className="border-b border-border bg-card px-5 py-4">
+          <p className="max-h-20 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-6 text-white/72">
             {discussion.content}
           </p>
         </div>
 
         {polls.length > 0 && (
-          <div className="flex max-h-[140px] shrink-0 flex-col border-b border-white/10 bg-white/[0.02] px-5 py-4">
-            <h3 className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-white/38">Polls</h3>
+          <div className="flex max-h-[140px] shrink-0 flex-col border-b border-border bg-card px-5 py-4">
+            <h3 className="mb-3 shrink-0 text-xs font-semibold text-muted-foreground">Polls</h3>
             <div className="space-y-3 overflow-y-auto pr-2">
               {polls.map((poll) => (
                 <PollComponent
@@ -179,7 +179,7 @@ function DiscussionThread({ discussionId, onBack }: DiscussionThreadProps) {
         <div className="flex-1 w-full space-y-4 overflow-y-auto px-5 py-5">
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center">
-              <p className="text-center text-white/45">No messages yet. Start the conversation!</p>
+              <p className="text-center text-white/45">No messages yet.</p>
             </div>
           ) : (
             <>

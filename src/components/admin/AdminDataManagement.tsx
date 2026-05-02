@@ -162,7 +162,7 @@ const AdminDataManagement = () => {
               </div>
               <div className="p-4 rounded-lg bg-background/50 border border-border/50">
                 <p className="text-xs text-muted-foreground mb-1">MongoDB Storage Used</p>
-                <p className="text-2xl font-bold f1-heading text-blue-400">{stats?.storageSizeKB || 0} KB</p>
+                <p className="text-2xl font-bold f1-heading text-primary">{stats?.storageSizeKB || 0} KB</p>
               </div>
             </div>
           )}

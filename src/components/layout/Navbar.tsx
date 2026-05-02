@@ -1,6 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { History, LayoutDashboard, LogOut, Menu, MessageCircle, FlagTriangleRight, Shield, Trophy, UserCircle } from "lucide-react";
+import {
+  FlagTriangleRight,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageCircle,
+  Radio,
+  Shield,
+  Trophy,
+  UserCircle,
+} from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -19,90 +30,150 @@ import { BrandMark } from "@/components/layout/BrandMark";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/results", label: "Results", icon: FlagTriangleRight },
-  { to: "/predictions", label: "History", icon: History },
-  { to: "/discussions", label: "Discussions", icon: MessageCircle },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, code: "DSH" },
+  { to: "/leaderboard", label: "Leaderboard", icon: Trophy, code: "LDR" },
+  { to: "/results", label: "Results", icon: FlagTriangleRight, code: "RSL" },
+  { to: "/predictions", label: "History", icon: History, code: "HST" },
+  { to: "/discussions", label: "Discussions", icon: MessageCircle, code: "COM" },
 ];
 
-const adminNavItem = { to: "/admin", label: "Admin", icon: Shield };
+const adminNavItem = { to: "/admin", label: "Admin", icon: Shield, code: "ADM" };
+
+function StatusBar() {
+  const items = [
+    "RACE CONTROL: ONLINE",
+    "PREDICTION FEED: SYNCED",
+    "LOCK WINDOWS: ACTIVE",
+    "RESULTS SERVICE: READY",
+    "DISCUSSIONS: LIVE",
+  ];
+  const stream = [...items, ...items];
+
+  return (
+    <div className="fixed left-0 right-0 top-0 z-40 border-b border-border bg-surface-1 lg:left-[240px]">
+      <div className="flex overflow-hidden">
+        <div className="flex shrink-0 items-center gap-2 bg-signal px-3 py-1.5 text-signal-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-signal-foreground animate-pulse-signal" />
+          <span className="data-mono text-[11px] font-bold">LIVE</span>
+        </div>
+        <div className="flex-1 overflow-hidden whitespace-nowrap">
+          <div className="inline-flex animate-ticker py-1.5 data-mono text-[11px] text-muted-foreground">
+            {stream.map((item, index) => (
+              <span key={`${item}-${index}`} className="border-r border-border px-6">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const navButtonClass = (active: boolean) =>
   cn(
-    "rounded-full border px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.16em] transition-all md:px-4 md:text-[0.7rem] md:tracking-[0.18em]",
+    "group relative flex items-center gap-3 rounded-sm px-2.5 py-2 text-sm transition-colors",
     active
-      ? "border-primary/40 bg-primary/20 text-white shadow-[0_10px_30px_rgba(255,105,61,0.2)]"
-      : "border-transparent bg-transparent text-white/62 hover:border-white/10 hover:bg-white/[0.05] hover:text-white",
+      ? "bg-surface-2 text-foreground"
+      : "text-muted-foreground hover:bg-surface-1 hover:text-foreground",
   );
+
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation();
+  const { user } = useAuth();
+  const items = user?.role === "admin" ? [...navItems, adminNavItem] : navItems;
+
+  return (
+    <nav className="flex flex-col gap-1">
+      {items.map((item) => {
+        const active = location.pathname === item.to;
+        const Icon = item.icon;
+        return (
+          <Link key={item.to} to={item.to} onClick={onNavigate} className={navButtonClass(active)}>
+            {active && <span className="absolute bottom-1.5 left-0 top-1.5 w-[2px] bg-signal" />}
+            <Icon className="h-4 w-4" />
+            <span className="flex-1">{item.label}</span>
+            <span className="data-mono text-[9px] text-muted-foreground/70">{item.code}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
+  useEffect(() => {
+    document.body.classList.add("cockpit-nav-mounted");
+    return () => document.body.classList.remove("cockpit-nav-mounted");
+  }, []);
+
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-50 px-3 pt-3 md:px-6">
-        <div className="glass-strong mx-auto flex max-w-7xl items-center gap-3 rounded-[1.4rem] px-3 py-3 md:gap-4 md:rounded-[1.75rem] md:px-5">
-          <div className="min-w-0 shrink">
-            <BrandMark to="/dashboard" />
-          </div>
+      <StatusBar />
 
-          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex">
-            {navItems.map((item) => (
-              <Link key={item.to} to={item.to} className={navButtonClass(location.pathname === item.to)}>
-                <span className="flex items-center gap-2">
-                  <item.icon className="h-3.5 w-3.5" />
-                  {item.label}
-                </span>
-              </Link>
-            ))}
-            {user?.role === "admin" && (
-              <Link to={adminNavItem.to} className={navButtonClass(location.pathname === adminNavItem.to)}>
-                <span className="flex items-center gap-2">
-                  <adminNavItem.icon className="h-3.5 w-3.5" />
-                  {adminNavItem.label}
-                </span>
-              </Link>
-            )}
-          </nav>
+      <aside className="cockpit-sidebar fixed bottom-0 left-0 top-0 z-50 hidden w-[240px] flex-col border-r border-border bg-sidebar lg:flex">
+        <div className="border-b border-border p-5">
+          <BrandMark to="/dashboard" />
+        </div>
 
-          <div className="ml-auto hidden shrink-0 items-center xl:flex">
-            {user && (
-              <DropdownMenu>
-                <DropdownMenuTrigger className="rounded-full focus:outline-none ring-offset-background transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                  <Avatar className="h-10 w-10 border border-white/10 bg-white/[0.04] md:h-11 md:w-11">
+        <div className="px-3 pb-2 pt-5">
+          <div className="label-eyebrow mb-2 px-2">Navigation</div>
+          <NavLinks />
+        </div>
+
+        <div className="mt-auto space-y-3 p-3">
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="w-full rounded-sm border border-border bg-surface-1 p-2 text-left transition-colors hover:border-signal focus:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9 rounded-sm border border-border bg-surface-2">
                     <AvatarImage src={`https://api.dicebear.com/7.x/identicon/svg?seed=${user.id}`} alt={user.name} />
                     <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64 rounded-[1.25rem] border-white/10 bg-[rgba(10,16,29,0.95)] backdrop-blur-2xl" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-semibold leading-none text-white">{user.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setProfileOpen(true)} className="cursor-pointer rounded-xl">
-                    <UserCircle className="mr-2 h-4 w-4" />
-                    Edit Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="cursor-pointer rounded-xl text-destructive focus:bg-destructive/10">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+                    <p className="data-mono truncate text-[10px] text-muted-foreground">SIGNED IN</p>
+                  </div>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 rounded-sm border-border bg-popover" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-semibold leading-none text-white">{user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setProfileOpen(true)} className="cursor-pointer rounded-sm">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="cursor-pointer rounded-sm text-destructive focus:bg-destructive/10">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
+          <div className="flex items-center gap-2 px-2 py-1.5 data-mono text-[10px] text-muted-foreground">
+            <Radio className="h-3 w-3 text-signal" />
+            CONNECTED / TELEMETRY FEED
+          </div>
+        </div>
+      </aside>
+
+      <header className="fixed left-0 right-0 top-[28px] z-50 border-b border-border bg-sidebar/95 px-3 py-3 backdrop-blur lg:hidden">
+        <div className="flex items-center gap-3">
+          <BrandMark to="/dashboard" compact />
           <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild className="xl:hidden">
-              <Button variant="glass" size="icon" className="ml-auto">
+            <SheetTrigger asChild>
+              <Button variant="cockpit" size="icon" className="ml-auto">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -110,40 +181,19 @@ const Navbar = () => {
               <div className="mt-8 flex flex-col gap-6">
                 <BrandMark to="/dashboard" />
                 {user && (
-                  <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-[0.65rem] uppercase tracking-[0.24em] text-white/40">Signed in as</p>
+                  <div className="panel p-4">
+                    <p className="label-eyebrow">Signed in as</p>
                     <p className="mt-2 text-base font-semibold text-white">{user.name}</p>
                     <p className="text-sm text-white/55">{user.email}</p>
                   </div>
                 )}
-                <div className="space-y-2">
-                  {navItems.map((item) => (
-                    <Link key={item.to} to={item.to} onClick={() => setOpen(false)} className="block">
-                      <div className={navButtonClass(location.pathname === item.to) + " w-full rounded-2xl px-4 py-3"}>
-                        <span className="flex items-center gap-3">
-                          <item.icon className="h-4 w-4" />
-                          {item.label}
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                  {user?.role === "admin" && (
-                    <Link to={adminNavItem.to} onClick={() => setOpen(false)} className="block">
-                      <div className={navButtonClass(location.pathname === adminNavItem.to) + " w-full rounded-2xl px-4 py-3"}>
-                        <span className="flex items-center gap-3">
-                          <adminNavItem.icon className="h-4 w-4" />
-                          {adminNavItem.label}
-                        </span>
-                      </div>
-                    </Link>
-                  )}
-                </div>
-                <div className="flex gap-3">
-                  <Button variant="glass" className="flex-1" onClick={() => setProfileOpen(true)}>
+                <NavLinks onNavigate={() => setOpen(false)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="cockpit" onClick={() => setProfileOpen(true)}>
                     <UserCircle className="h-4 w-4" />
                     Profile
                   </Button>
-                  <Button variant="outline" className="flex-1" onClick={logout}>
+                  <Button variant="outline" onClick={logout}>
                     <LogOut className="h-4 w-4" />
                     Logout
                   </Button>
@@ -153,6 +203,7 @@ const Navbar = () => {
           </Sheet>
         </div>
       </header>
+
       <EditProfileModal isOpen={profileOpen} onOpenChange={setProfileOpen} />
     </>
   );

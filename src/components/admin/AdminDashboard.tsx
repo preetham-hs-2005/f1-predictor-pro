@@ -86,7 +86,7 @@ const AdminDashboard = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
               <span>Race Results</span>
-              <Target className="h-4 w-4 text-blue-500" />
+              <Target className="h-4 w-4 text-primary" />
             </CardTitle>
           </CardHeader>
           <CardContent>

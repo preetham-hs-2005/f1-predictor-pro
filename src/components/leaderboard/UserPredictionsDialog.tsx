@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Loader } from "lucide-react";
+import { AlertTriangle, Loader, Trophy } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useDrivers } from "@/hooks/useDrivers";
 import { apiClient } from "@/lib/api/client";
+import { type LeaderboardEntry } from "@/lib/api/leaderboard";
 import { getUserScores, type UserScore } from "@/lib/api/predictions";
 import { getAllRaces } from "@/lib/api/races";
 import {
@@ -15,14 +14,19 @@ import {
   type PredictionType,
   type RaceWeekend,
 } from "@/lib/data/raceCalendar";
-import { LeaderboardEntry } from "@/lib/api/leaderboard";
-import { useDrivers } from "@/hooks/useDrivers";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface UserPredictionsDialogProps {
   user: LeaderboardEntry | null;
   onClose: () => void;
 }
+
+const scorePart = (label: string, value?: number) =>
+  value && value > 0 ? (
+    <span className="border border-signal/30 bg-signal/10 px-2 py-1 data-mono text-[10px] text-signal">
+      {label} +{value}
+    </span>
+  ) : null;
 
 export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogProps) {
   const [predictions, setPredictions] = useState<any[]>([]);
@@ -30,12 +34,12 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
   const [races, setRaces] = useState<RaceWeekend[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const { drivers } = useDrivers();
-  
+
   const getDriverName = (id?: string) => {
     if (!id) return "-";
-    const driver = drivers.find(d => d.id === id);
+    const driver = drivers.find((d) => d.id === id);
     return driver ? driver.name : id;
   };
 
@@ -58,6 +62,7 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
           raceStartTime: race.raceStartTime,
           sprintWeekend: race.sprintWeekend,
           sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+          sprintStartTime: race.sprintStartTime,
           timeZone: race.timeZone,
           isLocked: race.isLocked || false,
           isComplete: race.isComplete || false,
@@ -66,22 +71,18 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
         setRaces(convertedRaces);
 
         const lockedIds = convertedRaces
-          .filter((r) => isPredictionLocked(r, "race") || isPredictionLocked(r, "sprint"))
-          .map((r) => r.id)
+          .filter((race) => isPredictionLocked(race, "race") || isPredictionLocked(race, "sprint"))
+          .map((race) => race.id)
           .join(",");
-          
-        const res = await apiClient.get<any>(
-          `/api/predictions/public/${user.userId}?lockedIds=${lockedIds}`
-        );
+
+        const res = await apiClient.get<any>(`/api/predictions/public/${user.userId}?lockedIds=${lockedIds}`);
         if (res.success && res.data) {
           setPredictions(res.data);
         } else {
           setError(res.error || "Failed to load predictions");
         }
 
-        // Also fetch scores to show which predictions earned points
-        const scoresData = await getUserScores(user.userId);
-        setScores(scoresData);
+        setScores(await getUserScores(user.userId));
       } catch (err: any) {
         setError(err.message || "Failed to load predictions");
       } finally {
@@ -92,116 +93,135 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
     fetchPredictions();
   }, [user]);
 
-  const getRaceName = (raceId: string) => {
-    return races.find(r => r.id === raceId)?.raceName || raceId;
-  };
-
-  const getRace = (raceId: string) => {
-    return races.find(r => r.id === raceId);
-  };
-
-  const getScoreForPrediction = (raceId: string, type: string) => {
-    return scores.find(s => s.raceId === raceId && s.type === type);
-  };
+  const getRace = (raceId: string) => races.find((race) => race.id === raceId);
+  const getScoreForPrediction = (raceId: string, type: string) => scores.find((score) => score.raceId === raceId && score.type === type);
+  const scoredTotal = scores.reduce((sum, score) => sum + score.total, 0);
 
   return (
     <Dialog open={!!user} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] h-[80vh] flex flex-col bg-card/95 backdrop-blur-md border-primary/20">
-        <DialogHeader>
-          <DialogTitle className="f1-heading text-xl truncate">
-            {user?.username || user?.name}'s Predictions
+      <DialogContent className="flex h-[86vh] w-[calc(100vw-2rem)] max-w-6xl flex-col gap-0 overflow-hidden border-border bg-card p-0 sm:rounded-sm">
+        <DialogHeader className="border-b border-border px-5 py-4">
+          <DialogTitle className="display truncate text-2xl font-bold text-white">
+            {user?.username || user?.name || "Player"} / prediction trace
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto pr-2 mt-4 space-y-4">
-          {loading ? (
-             <div className="flex items-center justify-center p-8">
-               <Loader className="h-6 w-6 animate-spin text-primary" />
-             </div>
-          ) : error ? (
-             <div className="p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20 text-sm">
-               {error}
-             </div>
-          ) : predictions.length === 0 ? (
-             <div className="p-8 text-center text-muted-foreground text-sm flex items-center justify-center border border-dashed border-border/50 rounded-lg h-32">
-               No locked predictions found for this user.
-             </div>
-          ) : (
-            predictions.map((p) => {
-              const score = getScoreForPrediction(p.raceWeekendId, p.type);
-              const race = getRace(p.raceWeekendId);
-              const predictionType: PredictionType = p.type === "sprint" ? "sprint" : "race";
-              const disqualified = race ? isPredictionDisqualified(race, p, predictionType) : false;
-              return (
-                <div key={`${p.raceWeekendId}-${p.type}`} className="glass p-4 rounded-xl space-y-3 border border-border/40 hover:border-primary/30 transition-colors">
-                  <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
-                    <span className="font-bold text-sm text-primary">
-                      {getRaceName(p.raceWeekendId)}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {disqualified ? (
-                        <Badge variant="outline" className="border-destructive/40 bg-destructive/15 text-destructive">
-                          DSQ
-                        </Badge>
-                      ) : score ? (
-                        <Badge variant="outline" className="border-f1-success/40 bg-f1-success/15 text-f1-success">
-                          {score.total} pts
-                        </Badge>
-                      ) : null}
-                      <span className="text-xs text-muted-foreground uppercase bg-secondary/50 px-2 py-0.5 rounded font-mono">
-                        {p.type}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm mt-3">
-                    <div className="bg-background/40 rounded-lg p-3">
-                      <p className="text-muted-foreground text-xs mb-2 uppercase tracking-wider font-semibold">Qualifying</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Pole</span>
-                        <span className={`font-bold ${score?.polePoints ? "text-f1-success" : ""}`}>{getDriverName(p.predictedPole)}</span>
-                      </div>
-                    </div>
-                    <div className="bg-background/40 rounded-lg p-3">
-                      <p className="text-muted-foreground text-xs mb-2 uppercase tracking-wider font-semibold">Podium</p>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-f1-gold">P1 🥇</span>
-                        <span className={`font-bold ${score?.p1Points ? "text-f1-success" : ""}`}>{getDriverName(p.predictedP1)}</span>
-                      </div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-f1-silver">P2 🥈</span>
-                        <span className={`font-bold ${score?.p2Points ? "text-f1-success" : ""}`}>{getDriverName(p.predictedP2)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-f1-bronze">P3 🥉</span>
-                        <span className={`font-bold ${score?.p3Points ? "text-f1-success" : ""}`}>{getDriverName(p.predictedP3)}</span>
-                      </div>
-                    </div>
-                  </div>
+        <div className="grid min-h-0 flex-1 lg:grid-cols-[320px_1fr]">
+          <aside className="border-b border-border bg-sidebar/70 p-5 lg:border-b-0 lg:border-r">
+            <p className="label-eyebrow">Driver profile</p>
+            <div className="mt-5 flex h-20 w-20 items-center justify-center border border-signal bg-signal/10 text-signal">
+              <Trophy className="h-9 w-9" />
+            </div>
+            <p className="display mt-5 truncate text-3xl font-bold text-white">{user?.username || user?.name}</p>
+            <p className="data-mono mt-2 truncate text-[10px] uppercase text-muted-foreground">{user?.email}</p>
 
-                  {/* Score breakdown badges */}
-                  {score && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {score.p1Points > 0 && <Badge variant="outline" className="text-f1-success border-f1-success/30">P1 +{score.p1Points}</Badge>}
-                      {score.p2Points > 0 && <Badge variant="outline" className="text-f1-success border-f1-success/30">P2 +{score.p2Points}</Badge>}
-                      {score.p3Points > 0 && <Badge variant="outline" className="text-f1-success border-f1-success/30">P3 +{score.p3Points}</Badge>}
-                      {score.polePoints > 0 && <Badge variant="outline" className="text-f1-success border-f1-success/30">Pole +{score.polePoints}</Badge>}
-                      {score.podiumBonusPoints > 0 && <Badge variant="outline" className="text-f1-gold border-f1-gold/30">Podium Bonus +{score.podiumBonusPoints}</Badge>}
-                      {score.constructorPoints > 0 && <Badge variant="outline" className="text-f1-gold border-f1-gold/30">Constructor +{score.constructorPoints}</Badge>}
-                      {score.unexpectedPoints > 0 && <Badge variant="outline" className="text-f1-warning border-f1-warning/30">Unexpected +{score.unexpectedPoints}</Badge>}
-                    </div>
-                  )}
-                  
-                  {p.unexpectedStatement && (
-                    <div className="mt-3 pt-3 border-t border-border/20">
-                      <p className="text-muted-foreground text-xs mb-1 uppercase tracking-wider font-semibold">Bold Prediction</p>
-                      <p className="text-sm italic pl-2 border-l-2 border-primary/50 text-foreground/80">"{p.unexpectedStatement}"</p>
-                    </div>
-                  )}
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              {[
+                ["Rank", user ? `P${user.rank}` : "-"],
+                ["Total", user?.totalPoints ?? 0],
+                ["Scored", scoredTotal],
+                ["Entries", user?.predictionsSubmitted ?? 0],
+                ["Winner hits", user?.correctWinners ?? 0],
+                ["Exact pods", user?.exactPodiums ?? 0],
+              ].map(([label, value]) => (
+                <div key={label} className="border border-border bg-surface-2 p-3">
+                  <p className="label-eyebrow">{label}</p>
+                  <p className="data-mono mt-2 text-xl font-bold text-white">{value}</p>
                 </div>
-              );
-            })
-          )}
+              ))}
+            </div>
+          </aside>
+
+          <div className="min-h-0 overflow-y-auto">
+            {loading ? (
+              <div className="flex h-full min-h-[360px] items-center justify-center">
+                <Loader className="h-7 w-7 animate-spin text-signal" />
+              </div>
+            ) : error ? (
+              <div className="m-5 border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
+            ) : predictions.length === 0 ? (
+              <div className="flex h-full min-h-[360px] items-center justify-center p-8 text-center">
+                <p className="data-mono text-sm text-muted-foreground">No locked predictions found for this user.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {predictions.map((prediction) => {
+                  const score = getScoreForPrediction(prediction.raceWeekendId, prediction.type);
+                  const race = getRace(prediction.raceWeekendId);
+                  const predictionType: PredictionType = prediction.type === "sprint" ? "sprint" : "race";
+                  const disqualified = race ? isPredictionDisqualified(race, prediction, predictionType) : false;
+                  return (
+                    <article key={`${prediction.raceWeekendId}-${prediction.type}`} className="grid gap-4 px-5 py-5 xl:grid-cols-[1fr_1.35fr_150px] xl:items-start">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className={cn(prediction.type === "sprint" ? "border-warning/30 bg-warning/10 text-warning" : "border-signal/30 bg-signal/10 text-signal")}>
+                            {prediction.type}
+                          </Badge>
+                          {disqualified && (
+                            <Badge variant="outline" className="border-destructive/40 bg-destructive/15 text-destructive">
+                              <AlertTriangle className="mr-1 h-3 w-3" />
+                              DSQ
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="display mt-3 truncate text-2xl font-bold text-white">{race?.raceName || prediction.raceWeekendId}</p>
+                        <p className="data-mono mt-1 truncate text-[10px] uppercase text-muted-foreground">
+                          {race ? `R${race.round} / ${race.circuitName}` : prediction.raceWeekendId}
+                        </p>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="border border-border bg-surface-2/50 p-3">
+                          <p className="label-eyebrow">Podium call</p>
+                          {[
+                            ["P1", prediction.predictedP1, score?.p1Points],
+                            ["P2", prediction.predictedP2, score?.p2Points],
+                            ["P3", prediction.predictedP3, score?.p3Points],
+                          ].map(([label, driver, points]) => (
+                            <div key={label as string} className="mt-2 flex items-center justify-between gap-3 data-mono text-sm">
+                              <span className="text-muted-foreground">{label}</span>
+                              <span className={cn("truncate text-right font-semibold text-white", Number(points) > 0 && "text-signal")}>{getDriverName(driver as string)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="border border-border bg-surface-2/50 p-3">
+                          <p className="label-eyebrow">Bonus board</p>
+                          <div className="mt-2 flex items-center justify-between gap-3 data-mono text-sm">
+                            <span className="text-muted-foreground">Pole</span>
+                            <span className={cn("truncate text-right font-semibold text-white", score?.polePoints && "text-signal")}>{getDriverName(prediction.predictedPole)}</span>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between gap-3 data-mono text-sm">
+                            <span className="text-muted-foreground">Constructor</span>
+                            <span className={cn("truncate text-right font-semibold text-white", score?.constructorPoints && "text-signal")}>{prediction.predictedConstructor || "-"}</span>
+                          </div>
+                        </div>
+                        {prediction.unexpectedStatement && (
+                          <div className="border border-warning/20 bg-warning/10 p-3 md:col-span-2">
+                            <p className="label-eyebrow text-warning">Unexpected pick</p>
+                            <p className="mt-2 text-sm leading-6 text-white/80">{prediction.unexpectedStatement}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border border-border bg-surface-2/50 p-3">
+                        <p className="label-eyebrow">Score</p>
+                        <p className="data-mono mt-2 text-3xl font-bold text-white">{score?.total ?? 0}</p>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {scorePart("P1", score?.p1Points)}
+                          {scorePart("P2", score?.p2Points)}
+                          {scorePart("P3", score?.p3Points)}
+                          {scorePart("Pole", score?.polePoints)}
+                          {scorePart("Pod", score?.podiumBonusPoints)}
+                          {scorePart("Ctor", score?.constructorPoints)}
+                          {scorePart("Wild", score?.unexpectedPoints)}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

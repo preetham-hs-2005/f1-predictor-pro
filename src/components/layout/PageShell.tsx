@@ -11,8 +11,6 @@ interface PageShellProps {
 export function PageShell({ children, className, contentClassName }: PageShellProps) {
   return (
     <div className={cn("page-shell", className)}>
-      <div className="page-background" />
-      <div className="page-grid" />
       <div className={cn("relative z-10", contentClassName)}>{children}</div>
     </div>
   );

@@ -76,8 +76,8 @@ const Predict = () => {
 
   if (isLoading || raceLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-signal" />
       </div>
     );
   }
@@ -86,9 +86,9 @@ const Predict = () => {
     return (
       <PageShell>
         <Navbar />
-        <main className="container pt-28 md:pt-32">
+        <main className="mx-auto max-w-[1100px] px-4 pt-24 sm:px-6 lg:px-8">
           <section className="section-card text-center">
-            <p className="font-heading text-2xl text-white">{raceError || "Race not found"}</p>
+            <p className="display text-2xl font-semibold text-white">{raceError || "Race not found"}</p>
           </section>
         </main>
       </PageShell>
@@ -102,29 +102,29 @@ const Predict = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="container pb-12 pt-28 md:pt-32">
+      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
         <PageHeader
           eyebrow={`Round ${race.round}`}
           title={race.raceName}
-          description={`${race.circuitName} • Build your ${isSprint ? "sprint" : "grand prix"} prediction without leaving the race context.`}
-          badge={isSprint ? "Sprint mode" : "Race mode"}
+          description={race.circuitName}
+          badge={isSprint ? "Sprint" : "Grand Prix"}
           stats={[
             { label: "Event", value: race.countryFlag },
             { label: "Type", value: isSprint ? "Sprint" : "Grand Prix" },
             { label: "Deadline", value: locked ? "Locked" : "Open" },
-            { label: "Timezone", value: "IST ready" },
+            { label: "Time", value: "IST" },
           ]}
         />
 
-        <section className="section-card mt-8">
+        <section className="mt-8">
           {race.sprintWeekend && (
             <div className="mb-6 flex flex-wrap gap-3">
               <button
                 onClick={() => navigate(`/predict/${raceId}/sprint`)}
-                className={`rounded-full border px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] transition-all ${
+                className={`data-mono rounded-sm border px-5 py-3 text-sm font-semibold uppercase transition-colors ${
                   isSprint
-                    ? "border-f1-warning/30 bg-f1-warning/10 text-f1-warning"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:text-white"
+                    ? "border-warning/30 bg-warning/10 text-warning"
+                    : "border-border bg-surface-2 text-white/60 hover:text-white"
                 }`}
               >
                 <Zap className="mr-2 inline h-4 w-4" />
@@ -132,10 +132,10 @@ const Predict = () => {
               </button>
               <button
                 onClick={() => navigate(`/predict/${raceId}/race`)}
-                className={`rounded-full border px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] transition-all ${
+                className={`data-mono rounded-sm border px-5 py-3 text-sm font-semibold uppercase transition-colors ${
                   !isSprint
-                    ? "border-primary/30 bg-primary/10 text-primary"
-                    : "border-white/10 bg-white/[0.04] text-white/60 hover:text-white"
+                    ? "border-signal/30 bg-signal/10 text-signal"
+                    : "border-border bg-surface-2 text-white/60 hover:text-white"
                 }`}
               >
                 Grand Prix
@@ -145,31 +145,31 @@ const Predict = () => {
 
           <div className="mb-8 flex flex-wrap items-center gap-3">
             {isSprint && (
-              <Badge variant="outline" className="rounded-full border-f1-warning/30 bg-f1-warning/10 px-3 py-1 text-[0.7rem] uppercase tracking-[0.2em] text-f1-warning">
+              <Badge variant="outline" className="data-mono rounded-sm border-warning/30 bg-warning/10 px-3 py-1 text-xs font-semibold uppercase text-warning">
                 <Zap className="mr-1.5 h-3.5 w-3.5" />
-                Sprint • 0.5x points
+                Sprint / 0.5x points
               </Badge>
             )}
             {race.cancelled ? (
-              <Badge className="rounded-full border border-destructive/25 bg-destructive/10 px-3 py-1 text-[0.7rem] uppercase tracking-[0.2em] text-destructive">
+              <Badge className="data-mono rounded-sm border border-destructive/25 bg-destructive/10 px-3 py-1 text-xs font-semibold uppercase text-destructive">
                 <X className="mr-1.5 h-3.5 w-3.5" />
                 Race cancelled
               </Badge>
             ) : locked ? (
-              <Badge className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[0.7rem] uppercase tracking-[0.2em] text-primary">
+              <Badge className="data-mono rounded-sm border border-warning/25 bg-warning/10 px-3 py-1 text-xs font-semibold uppercase text-warning">
                 <Lock className="mr-1.5 h-3.5 w-3.5" />
                 Predictions locked
               </Badge>
             ) : (
-              <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/68">
-                Locks in <CountdownTimer targetDate={lockDeadline} className="ml-2 inline font-heading text-white" />
+              <div className="data-mono rounded-sm border border-border bg-surface-2 px-4 py-2 text-sm text-white/68">
+                Locks in <CountdownTimer targetDate={lockDeadline} className="ml-2 inline font-semibold text-white" />
               </div>
             )}
           </div>
 
           {race.cancelled ? (
-            <div className="rounded-[1.5rem] border border-destructive/20 bg-destructive/10 p-6 text-center">
-              <p className="text-destructive font-medium">This race has been cancelled. Predictions are not available.</p>
+            <div className="rounded-sm border border-destructive/20 bg-destructive/10 p-6 text-center">
+              <p className="font-medium text-destructive">This race has been cancelled. Predictions are not available.</p>
             </div>
           ) : (
             <PredictionForm race={race} type={predictionType} locked={locked} />

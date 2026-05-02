@@ -6,6 +6,7 @@ export interface RaceWeekend {
   countryFlag: string;
   round: number;
   sprintQualifyingStartTime?: string | null;
+  sprintStartTime?: string | null;
   qualifyingStartTime: string;
   raceStartTime: string;
   sprintWeekend: boolean;

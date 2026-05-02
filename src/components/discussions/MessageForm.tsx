@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Plus } from "lucide-react";
+import { Send } from "lucide-react";
 import CreatePollDialog from "./CreatePollDialog";
 
 interface MessageFormProps {
@@ -47,7 +47,7 @@ function MessageForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-gray-800 bg-black px-4 py-4 space-y-0 max-w-2xl mx-auto w-full flex-shrink-0">
+    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-2xl flex-shrink-0 border-t border-border bg-card px-4 py-4">
       <div className="flex gap-2">
         {onCreatePoll && (
           <CreatePollDialog onCreate={onCreatePoll} isLoading={isCreatingPoll} />
@@ -58,7 +58,7 @@ function MessageForm({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           disabled={isLoading || isCreatingPoll}
-          className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500 rounded-full px-4"
+          className="bg-input"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -70,7 +70,7 @@ function MessageForm({
         <Button
           type="submit"
           disabled={isLoading || isCreatingPoll || !content.trim()}
-          className="bg-red-600 hover:bg-red-700 rounded-full"
+          className="bg-primary hover:bg-primary/90"
           size="sm"
         >
           {isLoading ? (

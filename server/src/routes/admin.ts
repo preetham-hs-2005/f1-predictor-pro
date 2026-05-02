@@ -56,6 +56,7 @@ router.get("/races", async (req: Request, res: Response) => {
         timeZone: r.timeZone,
         sprintWeekend: r.sprintWeekend,
         sprintQualifyingStartTime: r.sprintQualifyingStartTime,
+        sprintStartTime: r.sprintStartTime,
         cancelled: r.cancelled || false,
         isLocked: r.isLocked || false,
         isComplete: r.isComplete || false,

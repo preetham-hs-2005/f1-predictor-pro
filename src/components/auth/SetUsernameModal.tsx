@@ -47,7 +47,7 @@ export function SetUsernameModal() {
 
   return (
     <Dialog open={!!isOpen} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[425px] hide-close-button [&>button]:hidden bg-card/95 backdrop-blur-md border-primary/20">
+      <DialogContent className="sm:max-w-[425px] hide-close-button [&>button]:hidden border-primary/20 bg-card">
         <DialogHeader>
           <DialogTitle className="f1-heading text-2xl">Set Your Username</DialogTitle>
           <DialogDescription>

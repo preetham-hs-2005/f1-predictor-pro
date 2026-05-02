@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MessageSquarePlus, Sparkles } from "lucide-react";
+import { MessageSquarePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "@/components/layout/Navbar";
@@ -79,9 +79,8 @@ const Discussions = () => {
       <Navbar />
       <main className="container pb-12 pt-24 md:pt-32">
         <PageHeader
-          eyebrow="Community"
-          title="Discussions and polls"
-          description="A more social race room for league banter, technical takes, and all the prediction-side conversation that keeps the season lively."
+          eyebrow="Discussions"
+          title="Threads and polls"
           actions={
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -92,27 +91,20 @@ const Discussions = () => {
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle className="font-heading text-2xl">Create a new discussion</DialogTitle>
+                  <DialogTitle className="text-2xl font-semibold">Create discussion</DialogTitle>
                 </DialogHeader>
                 <DiscussionForm onSubmit={handleCreateDiscussion} isLoading={isCreating} />
               </DialogContent>
             </Dialog>
           }
           stats={[
-            { label: "Mode", value: "Threads" },
-            { label: "Extras", value: "Polls" },
+            { label: "Type", value: "Threads" },
+            { label: "Polls", value: "Enabled" },
             { label: "Search", value: "Enabled" },
-            { label: "Energy", value: "High" },
           ]}
         />
 
         <section className="section-card mt-8">
-          <div className="mb-6 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
-            <p className="flex items-start gap-2 text-sm text-white/72">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              This page keeps all existing features, but now reads like a premium social hub instead of a plain forum list.
-            </p>
-          </div>
           <DiscussionsList onSelectDiscussion={setSelectedDiscussionId} />
         </section>
       </main>

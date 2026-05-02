@@ -32,10 +32,9 @@ const Admin = () => {
       <Navbar />
       <main className="container max-w-7xl pb-12 pt-28 md:pt-32">
         <PageHeader
-          eyebrow="Restricted area"
-          title="Admin control center"
-          description="Manage races, predictions, users, and system data inside the same upgraded design language while keeping the existing operational tooling."
-          badge="Administrator"
+          eyebrow="Admin"
+          title="Control center"
+          badge="Admin"
           stats={[
             { label: "Role", value: "Admin" },
             { label: "User", value: user.name },
@@ -105,7 +104,7 @@ const Admin = () => {
             <div className="section-card">
               <div className="flex items-center gap-3">
                 <Shield className="h-6 w-6 text-primary" />
-                <h2 className="font-heading text-2xl text-white">Admin settings</h2>
+                <h2 className="text-2xl font-semibold text-white">Settings</h2>
               </div>
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <div className="panel-subtle">
@@ -116,12 +115,12 @@ const Admin = () => {
                 <div className="panel-subtle">
                   <p className="page-eyebrow">Email</p>
                   <p className="mt-3 text-lg font-semibold text-white">{user.email}</p>
-                  <p className="mt-1 text-sm text-white/55">Primary operator contact</p>
+                  <p className="mt-1 text-sm text-white/55">Account email</p>
                 </div>
                 <div className="panel-subtle">
                   <p className="page-eyebrow">System health</p>
-                  <p className="mt-3 text-lg font-semibold text-white">All systems operational</p>
-                  <p className="mt-1 text-sm text-white/55">Database, scoring, and security active</p>
+                  <p className="mt-3 text-lg font-semibold text-white">Operational</p>
+                  <p className="mt-1 text-sm text-white/55">Database and scoring are active</p>
                 </div>
               </div>
             </div>

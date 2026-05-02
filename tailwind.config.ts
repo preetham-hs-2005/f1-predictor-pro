@@ -52,6 +52,18 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        signal: {
+          DEFAULT: "hsl(var(--signal))",
+          foreground: "hsl(var(--signal-foreground))",
+        },
+        danger: "hsl(var(--danger))",
+        warning: "hsl(var(--warning))",
+        info: "hsl(var(--info))",
+        surface: {
+          1: "hsl(var(--surface-1))",
+          2: "hsl(var(--surface-2))",
+          3: "hsl(var(--surface-3))",
+        },
         "f1-gold": "hsl(var(--f1-gold))",
         "f1-silver": "hsl(var(--f1-silver))",
         "f1-bronze": "hsl(var(--f1-bronze))",
@@ -94,6 +106,14 @@ export default {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        "pulse-signal": {
+          "0%, 100%": { opacity: "1", boxShadow: "0 0 0 0 hsl(var(--signal) / 0.45)" },
+          "50%": { opacity: "0.65", boxShadow: "0 0 0 6px hsl(var(--signal) / 0)" },
+        },
+        ticker: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -101,6 +121,8 @@ export default {
         "pulse-red": "pulse-red 1s ease-in-out infinite",
         "slide-up": "slide-up 0.5s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
+        "pulse-signal": "pulse-signal 2s ease-in-out infinite",
+        ticker: "ticker 38s linear infinite",
       },
     },
   },

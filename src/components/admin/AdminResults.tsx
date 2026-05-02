@@ -36,10 +36,7 @@ const AdminResults = () => {
   const { drivers, isLoading: loadingDrivers } = useDrivers();
   const teamsWithColors = Array.from(new Set(drivers.map(d => d.team)))
     .sort()
-    .map(team => {
-      const driver = drivers.find(d => d.team === team);
-      return { team, color: driver?.teamColor || "#FFFFFF" };
-    });
+    .map(team => ({ team }));
 
   // Load results and scores from MongoDB
   useEffect(() => {
@@ -220,10 +217,7 @@ const AdminResults = () => {
                         .map((d) => (
                           <SelectItem key={d.id} value={d.id}>
                             <span className="flex items-center gap-2">
-                              <span
-                                className="w-2 h-2 rounded-full shrink-0"
-                                style={{ backgroundColor: d.teamColor }}
-                              />
+                              <span className="w-2 h-2 rounded-full shrink-0 bg-primary" />
                               #{d.number} {d.name}
                             </span>
                           </SelectItem>
@@ -245,10 +239,7 @@ const AdminResults = () => {
                   {teamsWithColors.map((t) => (
                     <SelectItem key={t.team} value={t.team}>
                       <span className="flex items-center gap-2">
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: t.color }}
-                        />
+                        <span className="w-2 h-2 rounded-full shrink-0 bg-primary" />
                         {t.team}
                       </span>
                     </SelectItem>
