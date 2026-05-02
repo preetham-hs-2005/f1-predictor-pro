@@ -9,7 +9,12 @@ import { Loader } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { getUserScores, type UserScore } from "@/lib/api/predictions";
 import { getAllRaces } from "@/lib/api/races";
-import { isPredictionLocked, type RaceWeekend } from "@/lib/data/raceCalendar";
+import {
+  isPredictionDisqualified,
+  isPredictionLocked,
+  type PredictionType,
+  type RaceWeekend,
+} from "@/lib/data/raceCalendar";
 import { LeaderboardEntry } from "@/lib/api/leaderboard";
 import { useDrivers } from "@/hooks/useDrivers";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +96,10 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
     return races.find(r => r.id === raceId)?.raceName || raceId;
   };
 
+  const getRace = (raceId: string) => {
+    return races.find(r => r.id === raceId);
+  };
+
   const getScoreForPrediction = (raceId: string, type: string) => {
     return scores.find(s => s.raceId === raceId && s.type === type);
   };
@@ -120,6 +129,9 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
           ) : (
             predictions.map((p) => {
               const score = getScoreForPrediction(p.raceWeekendId, p.type);
+              const race = getRace(p.raceWeekendId);
+              const predictionType: PredictionType = p.type === "sprint" ? "sprint" : "race";
+              const disqualified = race ? isPredictionDisqualified(race, p, predictionType) : false;
               return (
                 <div key={`${p.raceWeekendId}-${p.type}`} className="glass p-4 rounded-xl space-y-3 border border-border/40 hover:border-primary/30 transition-colors">
                   <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
@@ -127,11 +139,15 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
                       {getRaceName(p.raceWeekendId)}
                     </span>
                     <div className="flex items-center gap-2">
-                      {score && (
-                        <Badge className="bg-primary/20 text-primary">
+                      {disqualified ? (
+                        <Badge variant="outline" className="border-destructive/40 bg-destructive/15 text-destructive">
+                          DSQ
+                        </Badge>
+                      ) : score ? (
+                        <Badge variant="outline" className="border-f1-success/40 bg-f1-success/15 text-f1-success">
                           {score.total} pts
                         </Badge>
-                      )}
+                      ) : null}
                       <span className="text-xs text-muted-foreground uppercase bg-secondary/50 px-2 py-0.5 rounded font-mono">
                         {p.type}
                       </span>

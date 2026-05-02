@@ -40,5 +40,25 @@ export const isPredictionLocked = (race: RaceWeekend, type: PredictionType = "ra
   return race.cancelled || !!race.isLocked || !lockTime || new Date() >= lockTime;
 };
 
+export const isPredictionDisqualified = (
+  race: RaceWeekend,
+  prediction: { createdAt?: string | Date; updatedAt?: string | Date },
+  type: PredictionType = "race",
+) => {
+  const cutoffSource = getPredictionLockSource(race, type);
+  const predictionSource = prediction.updatedAt || prediction.createdAt;
+
+  if (!cutoffSource || !predictionSource) return false;
+
+  const cutoffDate = new Date(cutoffSource);
+  const predictionDate = new Date(predictionSource);
+
+  if (Number.isNaN(cutoffDate.getTime()) || Number.isNaN(predictionDate.getTime())) {
+    return false;
+  }
+
+  return predictionDate > cutoffDate;
+};
+
 export const isRaceLocked = (race: RaceWeekend) => isPredictionLocked(race, "race");
 export const isSprintLocked = (race: RaceWeekend) => isPredictionLocked(race, "sprint");
