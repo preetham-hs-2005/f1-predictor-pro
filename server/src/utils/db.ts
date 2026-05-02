@@ -7,11 +7,10 @@ export async function connectDB(): Promise<Db> {
     return db;
   }
 
-  let mongoUri = process.env.MONGODB_URI;
-  
-  // Fallback to MongoDB Atlas connection (already tested)
+  const mongoUri = process.env.MONGODB_URI;
+
   if (!mongoUri) {
-    mongoUri = "mongodb+srv://Pree:pree1234@cluster0.o2h7vze.mongodb.net/f1_prediction_league?retryWrites=true&w=majority";
+    throw new Error("MONGODB_URI is required");
   }
 
   const client = new MongoClient(mongoUri);

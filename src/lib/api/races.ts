@@ -9,14 +9,17 @@ export interface ServerRace {
   raceId: string;
   raceName: string;
   round: number;
+  country?: string;
   countryFlag: string;
   circuitName: string;
   qualifyingStartTime: string;
   raceStartTime: string;
   timeZone: string;
   sprintWeekend: boolean;
-  sprintQualifyingStartTime?: string;
+  sprintQualifyingStartTime?: string | null;
   cancelled: boolean;
+  isLocked?: boolean;
+  isComplete?: boolean;
 }
 
 /**

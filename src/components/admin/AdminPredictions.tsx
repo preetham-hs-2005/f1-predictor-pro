@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { raceCalendar } from "@/lib/data/raceCalendar";
+import { getAllRaces } from "@/lib/api/races";
+import { type RaceWeekend } from "@/lib/data/raceCalendar";
 import { useDrivers } from "@/hooks/useDrivers";
 import { getAdminPredictions, getAdminScores, type AdminPrediction, type ScoreEntry, awardUnexpectedPoints, revokeUnexpectedPoints } from "@/lib/api/admin";
 import {
@@ -20,6 +21,7 @@ const AdminPredictions = () => {
   const [predType, setPredType] = useState<"race" | "sprint">("race");
   const [allPredictions, setAllPredictions] = useState<AdminPrediction[]>([]);
   const [allScores, setAllScores] = useState<ScoreEntry[]>([]);
+  const [races, setRaces] = useState<RaceWeekend[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -28,16 +30,33 @@ const AdminPredictions = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const [predictions, scores] = await Promise.all([
+    const [predictions, scores, serverRaces] = await Promise.all([
       getAdminPredictions(),
       getAdminScores(),
+      getAllRaces(),
     ]);
     setAllPredictions(predictions);
     setAllScores(scores);
+    setRaces(serverRaces.map((race) => ({
+      id: race.raceId,
+      raceName: race.raceName,
+      circuitName: race.circuitName,
+      country: race.country || "",
+      countryFlag: race.countryFlag,
+      round: race.round,
+      qualifyingStartTime: race.qualifyingStartTime,
+      raceStartTime: race.raceStartTime,
+      sprintWeekend: race.sprintWeekend,
+      sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+      timeZone: race.timeZone,
+      isLocked: race.isLocked || false,
+      isComplete: race.isComplete || false,
+      cancelled: race.cancelled || false,
+    })));
     setLoading(false);
   };
 
-  const race = raceCalendar.find((r) => r.id === selectedRace);
+  const race = races.find((r) => r.id === selectedRace);
 
   const predictions = useMemo(() => {
     if (!selectedRace) return [];
@@ -152,7 +171,7 @@ const AdminPredictions = () => {
                   <SelectValue placeholder="Select a race" />
                 </SelectTrigger>
                 <SelectContent>
-                  {raceCalendar.map((r) => (
+                  {races.map((r) => (
                     <SelectItem key={r.id} value={r.id}>
                       {r.countryFlag} R{r.round} · {r.raceName}
                     </SelectItem>

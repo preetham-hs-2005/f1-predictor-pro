@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Leaderboard } from "../models/Leaderboard.js";
 import { Results } from "../models/Results.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -46,7 +46,7 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // POST /api/leaderboard/results - Submit race results (admin only for now)
-router.post("/results", authMiddleware, async (req: Request, res: Response) => {
+router.post("/results", authMiddleware, requireAdmin, async (req: Request, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -54,8 +54,6 @@ router.post("/results", authMiddleware, async (req: Request, res: Response) => {
         error: "Not authenticated",
       });
     }
-
-    // TODO: Check if user has admin role
 
     const { raceWeekendId, type, p1, p2, p3, pole } = req.body;
 

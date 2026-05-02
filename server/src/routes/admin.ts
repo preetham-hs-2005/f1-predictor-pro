@@ -1,9 +1,34 @@
 import { Router, Request, Response } from "express";
-import { ObjectId } from "mongodb";
+import { Db, ObjectId } from "mongodb";
 import { getDB } from "../utils/db.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, requireAdmin } from "../middleware/auth.js";
+import {
+  getRaceForPrediction,
+  isPredictionDisqualified,
+  normalizePredictionType,
+} from "../utils/raceLocks.js";
 
 const router = Router();
+
+async function updateUserTotalPoints(db: Db, userId: string): Promise<void> {
+  const scoresCollection = db.collection("scores");
+  const totalPoints = (await scoresCollection.find({ userId }).toArray()).reduce(
+    (sum, score) => sum + (score.total || 0),
+    0
+  );
+
+  try {
+    await db.collection("users").updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: { totalPoints } }
+    );
+  } catch (e) {
+    await db.collection("users").updateOne(
+      { _id: userId as any },
+      { $set: { totalPoints } }
+    );
+  }
+}
 
 /**
  * PUBLIC: GET /api/admin/races
@@ -23,6 +48,7 @@ router.get("/races", async (req: Request, res: Response) => {
         raceId: r.raceId,
         raceName: r.raceName,
         round: r.round,
+        country: r.country || "",
         countryFlag: r.countryFlag,
         circuitName: r.circuitName,
         qualifyingStartTime: r.qualifyingStartTime,
@@ -31,6 +57,8 @@ router.get("/races", async (req: Request, res: Response) => {
         sprintWeekend: r.sprintWeekend,
         sprintQualifyingStartTime: r.sprintQualifyingStartTime,
         cancelled: r.cancelled || false,
+        isLocked: r.isLocked || false,
+        isComplete: r.isComplete || false,
       })),
     });
   } catch (error) {
@@ -42,6 +70,7 @@ router.get("/races", async (req: Request, res: Response) => {
 
 // Apply auth middleware to all admin routes below
 router.use(authMiddleware);
+router.use(requireAdmin);
 
 /**
  * GET /api/admin/users
@@ -338,6 +367,12 @@ router.post("/results", async (req: Request, res: Response) => {
     const resultsCollection = db.collection("results");
     const predictionsCollection = db.collection("predictions");
     const scoresCollection = db.collection("scores");
+    const race = await getRaceForPrediction(raceId);
+    const predictionType = normalizePredictionType(type);
+
+    if (!race) {
+      return res.status(404).json({ success: false, error: "Race weekend not found" });
+    }
 
     // Save result
     const result = await resultsCollection.findOneAndUpdate(
@@ -368,9 +403,20 @@ router.post("/results", async (req: Request, res: Response) => {
     console.log(`[SCORING] Results entered for raceId: ${raceId}, type: ${type}`);
     console.log(`[SCORING] Found ${predictions.length} predictions to score`);
 
+    let disqualifiedCount = 0;
+    const touchedUserIds = new Set<string>();
+
     // Calculate score for each prediction (WITHOUT unexpected bonus - requires admin approval)
     for (const prediction of predictions) {
       console.log(`[SCORING] DEBUG: Processing prediction - raceWeekendId: ${prediction.raceWeekendId}, userId: "${prediction.userId}", type of userId: ${typeof prediction.userId}`);
+      touchedUserIds.add(prediction.userId);
+
+      if (isPredictionDisqualified(race, prediction, predictionType)) {
+        await scoresCollection.deleteOne({ userId: prediction.userId, raceId, type });
+        disqualifiedCount++;
+        console.log(`[SCORING] Disqualified late prediction for user ${prediction.userId}, raceId=${raceId}, type=${type}`);
+        continue;
+      }
       
       const currentScore = await scoresCollection.findOne({ userId: prediction.userId, raceId, type });
       let unexpectedPoints = currentScore?.unexpectedPoints || 0; // Retain admin approval points
@@ -459,18 +505,13 @@ router.post("/results", async (req: Request, res: Response) => {
     // Update total points in users collection and leaderboard
     const scores = await scoresCollection.find({ raceId }).toArray();
     console.log(`[SCORING] Found ${scores.length} scores to aggregate`);
-    for (const score of scores) {
-      const userTotalScores = await scoresCollection
-        .find({ userId: score.userId })
-        .toArray();
-      const totalPoints = userTotalScores.reduce((sum, s) => sum + (s.total || 0), 0);
-      
-      console.log(`[SCORING] User ${score.userId} total points: ${totalPoints}`);
-      
-      await db.collection("users").updateOne(
-        { _id: new ObjectId(score.userId) },
-        { $set: { totalPoints } }
-      );
+    const userIdsToUpdate = new Set<string>([
+      ...touchedUserIds,
+      ...scores.map((score) => score.userId),
+    ]);
+
+    for (const userId of userIdsToUpdate) {
+      await updateUserTotalPoints(db, userId);
     }
 
     res.json({
@@ -479,7 +520,8 @@ router.post("/results", async (req: Request, res: Response) => {
         id: result?.value?._id?.toString() || "unknown",
         raceId,
         type,
-        predictionsScored: predictions.length,
+        predictionsScored: predictions.length - disqualifiedCount,
+        disqualifiedPredictions: disqualifiedCount,
         message: "Results saved and predictions scored!",
       },
     });
@@ -508,19 +550,29 @@ router.post("/scores/:userId/award-unexpected", async (req: Request, res: Respon
     const usersCollection = db.collection("users");
     const predictionsCollection = db.collection("predictions");
     const resultsCollection = db.collection("results");
+    const predictionType = normalizePredictionType(type);
+    const prediction = await predictionsCollection.findOne({
+      userId,
+      raceWeekendId: raceId,
+      type,
+    });
+    const race = await getRaceForPrediction(raceId);
+
+    if (prediction && race && isPredictionDisqualified(race, prediction, predictionType)) {
+      await scoresCollection.deleteOne({ userId, raceId, type });
+      await updateUserTotalPoints(db, userId);
+
+      return res.status(400).json({
+        success: false,
+        error: "Prediction was submitted after qualifying started and is disqualified",
+      });
+    }
 
     // Find current score or create one if it doesn't exist
     let currentScore = await scoresCollection.findOne({ userId, raceId, type });
     
     // If no score exists, create one with race points + 15 unexpected points
     if (!currentScore) {
-      // Get the prediction for this user and race
-      const prediction = await predictionsCollection.findOne({
-        userId,
-        raceWeekendId: raceId,
-        type,
-      });
-
       // Get the results for this race
       const result = await resultsCollection.findOne({
         raceId,
@@ -936,12 +988,17 @@ router.post("/rescore-race", async (req: Request, res: Response) => {
     const predictionsCollection = db.collection("predictions");
     const resultsCollection = db.collection("results");
     const scoresCollection = db.collection("scores");
-    const usersCollection = db.collection("users");
+    const race = await getRaceForPrediction(raceId);
+    const predictionType = normalizePredictionType(type);
 
     // Get race results
     const result = await resultsCollection.findOne({ raceId, type });
     if (!result) {
       return res.status(404).json({ success: false, error: "Race results not found" });
+    }
+
+    if (!race) {
+      return res.status(404).json({ success: false, error: "Race weekend not found" });
     }
 
     // Get all predictions for this race
@@ -950,10 +1007,20 @@ router.post("/rescore-race", async (req: Request, res: Response) => {
     console.log(`[RESCORING] Starting rescore for raceId=${raceId}, type=${type}, predictions count=${predictions.length}`);
 
     let scoredCount = 0;
+    let disqualifiedCount = 0;
     const userIds = new Set<string>();
 
     // Calculate and upsert scores for each prediction
     for (const prediction of predictions) {
+      userIds.add(prediction.userId);
+
+      if (isPredictionDisqualified(race, prediction, predictionType)) {
+        await scoresCollection.deleteOne({ userId: prediction.userId, raceId, type });
+        disqualifiedCount++;
+        console.log(`[RESCORING] Disqualified late prediction for user ${prediction.userId}, raceId=${raceId}, type=${type}`);
+        continue;
+      }
+
       let p1Points = 0, p2Points = 0, p3Points = 0, polePoints = 0, podiumBonusPoints = 0;
 
       if (prediction.predictedP1 === result.p1) p1Points = 25;
@@ -1006,36 +1073,21 @@ router.post("/rescore-race", async (req: Request, res: Response) => {
         { upsert: true }
       );
 
-      userIds.add(prediction.userId);
       scoredCount++;
     }
 
     // Update user totals
     for (const userId of userIds) {
-      const allScores = await scoresCollection.find({ userId }).toArray();
-      const totalPoints = allScores.reduce((sum, s) => sum + (s.total || 0), 0);
-
-      try {
-        await usersCollection.updateOne(
-          { _id: new ObjectId(userId) },
-          { $set: { totalPoints } }
-        );
-      } catch (e) {
-        try {
-          await usersCollection.updateOne(
-            { _id: userId as any },
-            { $set: { totalPoints } }
-          );
-        } catch {}
-      }
+      await updateUserTotalPoints(db, userId);
     }
 
-    console.log(`[RESCORING] Completed: rescored ${scoredCount} predictions for raceId=${raceId}`);
+    console.log(`[RESCORING] Completed: rescored ${scoredCount} predictions for raceId=${raceId}, disqualified=${disqualifiedCount}`);
 
     res.json({
       success: true,
       message: `Rescored ${scoredCount} predictions for this race`,
       scoredCount,
+      disqualifiedCount,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to rescore race";

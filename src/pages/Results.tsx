@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDrivers } from "@/hooks/useDrivers";
 import { apiClient } from "@/lib/api/client";
-import { raceCalendar } from "@/lib/data/raceCalendar";
+import { getAllRaces } from "@/lib/api/races";
+import { type RaceWeekend } from "@/lib/data/raceCalendar";
 
 interface RaceResult {
   id: string;
@@ -29,6 +30,7 @@ interface RaceResult {
 const Results = () => {
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const { drivers } = useDrivers();
+  const [races, setRaces] = useState<RaceWeekend[]>([]);
 
   const getDriverName = (id?: string) => {
     if (!id) return "TBC";
@@ -37,17 +39,47 @@ const Results = () => {
   };
 
   const now = new Date();
-  const completedRaces = raceCalendar
+  const completedRaces = races
     .filter((r) => !r.cancelled && new Date(r.raceStartTime) < now)
     .sort((a, b) => a.round - b.round);
 
-  const [selectedRaceId, setSelectedRaceId] = useState<string>(
-    completedRaces.length > 0 ? completedRaces[completedRaces.length - 1].id : "",
-  );
+  const [selectedRaceId, setSelectedRaceId] = useState<string>("");
 
   const [results, setResults] = useState<RaceResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRaces = async () => {
+      const serverRaces = await getAllRaces();
+      const converted = serverRaces.map((race) => ({
+        id: race.raceId,
+        raceName: race.raceName,
+        circuitName: race.circuitName,
+        country: race.country || "",
+        countryFlag: race.countryFlag,
+        round: race.round,
+        qualifyingStartTime: race.qualifyingStartTime,
+        raceStartTime: race.raceStartTime,
+        sprintWeekend: race.sprintWeekend,
+        sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+        timeZone: race.timeZone,
+        isLocked: race.isLocked || false,
+        isComplete: race.isComplete || false,
+        cancelled: race.cancelled || false,
+      }));
+      setRaces(converted);
+
+      const completed = converted
+        .filter((r) => !r.cancelled && new Date(r.raceStartTime) < new Date())
+        .sort((a, b) => a.round - b.round);
+      if (!selectedRaceId && completed.length > 0) {
+        setSelectedRaceId(completed[completed.length - 1].id);
+      }
+    };
+
+    fetchRaces();
+  }, [selectedRaceId]);
 
   useEffect(() => {
     if (authIsLoading) return;
@@ -73,7 +105,8 @@ const Results = () => {
     fetchResults();
   }, [selectedRaceId, isAuthenticated, authIsLoading]);
 
-  const selectedRaceName = raceCalendar.find((r) => r.id === selectedRaceId)?.raceName;
+  const selectedRace = races.find((r) => r.id === selectedRaceId);
+  const selectedRaceName = selectedRace?.raceName;
 
   return (
     <PageShell>
@@ -138,7 +171,7 @@ const Results = () => {
                   <Loader className="mb-4 h-8 w-8 animate-spin text-primary" />
                   <p className="text-muted-foreground">Loading official results...</p>
                 </div>
-              ) : raceCalendar.find((r) => r.id === selectedRaceId)?.cancelled ? (
+              ) : selectedRace?.cancelled ? (
                 <div className="section-card border border-destructive/20 bg-destructive/10 text-center">
                   <p className="font-heading text-2xl text-destructive">This race was cancelled.</p>
                 </div>

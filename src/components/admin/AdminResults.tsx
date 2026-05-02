@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { raceCalendar } from "@/lib/data/raceCalendar";
+import { getAllRaces } from "@/lib/api/races";
+import { type RaceWeekend } from "@/lib/data/raceCalendar";
 import { useDrivers } from "@/hooks/useDrivers";
 import { getAdminResults, saveAdminResult, getAdminScores } from "@/lib/api/admin";
 import {
@@ -20,9 +21,10 @@ const AdminResults = () => {
   const [resultType, setResultType] = useState<"race" | "sprint">("race");
   const [allResults, setAllResults] = useState<any[]>([]);
   const [allScores, setAllScores] = useState<any[]>([]);
+  const [races, setRaces] = useState<RaceWeekend[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const race = raceCalendar.find((r) => r.id === selectedRace);
+  const race = races.find((r) => r.id === selectedRace);
   const existingResult = selectedRace ? allResults.find((r) => r.raceId === selectedRace && r.type === resultType) : null;
 
   const [p1, setP1] = useState("");
@@ -44,9 +46,25 @@ const AdminResults = () => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [results, scores] = await Promise.all([getAdminResults(), getAdminScores()]);
+        const [results, scores, serverRaces] = await Promise.all([getAdminResults(), getAdminScores(), getAllRaces()]);
         setAllResults(results);
         setAllScores(scores);
+        setRaces(serverRaces.map((race) => ({
+          id: race.raceId,
+          raceName: race.raceName,
+          circuitName: race.circuitName,
+          country: race.country || "",
+          countryFlag: race.countryFlag,
+          round: race.round,
+          qualifyingStartTime: race.qualifyingStartTime,
+          raceStartTime: race.raceStartTime,
+          sprintWeekend: race.sprintWeekend,
+          sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+          timeZone: race.timeZone,
+          isLocked: race.isLocked || false,
+          isComplete: race.isComplete || false,
+          cancelled: race.cancelled || false,
+        })));
       } catch (error) {
         console.error("Failed to load results:", error);
       } finally {
@@ -112,7 +130,7 @@ const AdminResults = () => {
 
 
 
-  const completedResults = raceCalendar
+  const completedResults = races
     .map((r) => ({
       race: r,
       hasRace: !!allResults.find((res) => res.raceId === r.id && res.type === "race"),
@@ -145,7 +163,7 @@ const AdminResults = () => {
             <SelectValue placeholder="Select a race" />
           </SelectTrigger>
           <SelectContent>
-            {raceCalendar.map((r) => (
+            {races.map((r) => (
               <SelectItem key={r.id} value={r.id}>
                 {r.countryFlag} R{r.round} · {r.raceName}
               </SelectItem>

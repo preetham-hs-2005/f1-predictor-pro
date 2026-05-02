@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Lock, X, Zap } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -9,15 +9,18 @@ import CountdownTimer from "@/components/dashboard/CountdownTimer";
 import PredictionForm from "@/components/prediction/PredictionForm";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { getRaceById, isRaceLocked, isSprintLocked } from "@/lib/data/raceCalendar";
+import { getRaceByIdFromServer } from "@/lib/api/races";
+import { getPredictionLockSource, isPredictionLocked, type RaceWeekend } from "@/lib/data/raceCalendar";
 
 const Predict = () => {
   const { raceId, type = "race" } = useParams<{ raceId: string; type: string }>();
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [race, setRace] = useState<RaceWeekend | null>(null);
+  const [raceLoading, setRaceLoading] = useState(true);
+  const [raceError, setRaceError] = useState<string | null>(null);
 
   const predictionType = type === "sprint" ? "sprint" : "race";
-  const race = raceId ? getRaceById(raceId) : null;
 
   useEffect(() => {
     if (isLoading) return;
@@ -25,12 +28,53 @@ const Predict = () => {
   }, [isAuthenticated, navigate, isLoading]);
 
   useEffect(() => {
+    const loadRace = async () => {
+      if (!raceId || !isAuthenticated) return;
+
+      try {
+        setRaceLoading(true);
+        setRaceError(null);
+        const serverRace = await getRaceByIdFromServer(raceId);
+        if (!serverRace) {
+          setRace(null);
+          return;
+        }
+
+        setRace({
+          id: serverRace.raceId,
+          raceName: serverRace.raceName,
+          circuitName: serverRace.circuitName,
+          country: serverRace.country || "",
+          countryFlag: serverRace.countryFlag,
+          round: serverRace.round,
+          sprintQualifyingStartTime: serverRace.sprintQualifyingStartTime,
+          qualifyingStartTime: serverRace.qualifyingStartTime,
+          raceStartTime: serverRace.raceStartTime,
+          sprintWeekend: serverRace.sprintWeekend,
+          timeZone: serverRace.timeZone,
+          isLocked: serverRace.isLocked || false,
+          isComplete: serverRace.isComplete || false,
+          cancelled: serverRace.cancelled || false,
+          officialResults: null,
+        });
+      } catch (error) {
+        setRaceError(error instanceof Error ? error.message : "Failed to load race");
+        setRace(null);
+      } finally {
+        setRaceLoading(false);
+      }
+    };
+
+    loadRace();
+  }, [raceId, isAuthenticated]);
+
+  useEffect(() => {
     if (race && predictionType === "sprint" && !race.sprintWeekend) {
       navigate(`/predict/${raceId}/race`, { replace: true });
     }
   }, [race, predictionType, raceId, navigate]);
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading || raceLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -44,7 +88,7 @@ const Predict = () => {
         <Navbar />
         <main className="container pt-28 md:pt-32">
           <section className="section-card text-center">
-            <p className="font-heading text-2xl text-white">Race not found</p>
+            <p className="font-heading text-2xl text-white">{raceError || "Race not found"}</p>
           </section>
         </main>
       </PageShell>
@@ -52,8 +96,8 @@ const Predict = () => {
   }
 
   const isSprint = predictionType === "sprint";
-  const locked = isSprint ? isSprintLocked(race) : isRaceLocked(race);
-  const lockDeadline = isSprint ? race.sprintQualifyingStartTime! : race.qualifyingStartTime;
+  const locked = isPredictionLocked(race, predictionType);
+  const lockDeadline = getPredictionLockSource(race, predictionType);
 
   return (
     <PageShell>

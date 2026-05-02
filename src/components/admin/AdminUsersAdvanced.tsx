@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { getAdminUsers, toggleUserAdminRole, deleteAdminUser, getUserPredictions, toggleUserLeaderboardVisibility, type AdminUser, type AdminPrediction } from "@/lib/api/admin";
 import { useDrivers } from "@/hooks/useDrivers";
-import { raceCalendar } from "@/lib/data/raceCalendar";
+import { getAllRaces } from "@/lib/api/races";
+import { type RaceWeekend } from "@/lib/data/raceCalendar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ const AdminUsersAdvanced = () => {
   const [userPredictions, setUserPredictions] = useState<AdminPrediction[]>([]);
   const [loadingPredictions, setLoadingPredictions] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [races, setRaces] = useState<RaceWeekend[]>([]);
 
   useEffect(() => {
     loadUsers();
@@ -31,8 +33,24 @@ const AdminUsersAdvanced = () => {
 
   const loadUsers = async () => {
     setLoading(true);
-    const data = await getAdminUsers();
+    const [data, serverRaces] = await Promise.all([getAdminUsers(), getAllRaces()]);
     setUsers(data);
+    setRaces(serverRaces.map((race) => ({
+      id: race.raceId,
+      raceName: race.raceName,
+      circuitName: race.circuitName,
+      country: race.country || "",
+      countryFlag: race.countryFlag,
+      round: race.round,
+      qualifyingStartTime: race.qualifyingStartTime,
+      raceStartTime: race.raceStartTime,
+      sprintWeekend: race.sprintWeekend,
+      sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+      timeZone: race.timeZone,
+      isLocked: race.isLocked || false,
+      isComplete: race.isComplete || false,
+      cancelled: race.cancelled || false,
+    })));
     setLoading(false);
   };
 
@@ -164,7 +182,7 @@ const AdminUsersAdvanced = () => {
   };
 
   const getRaceName = (raceId: string) => {
-    const race = raceCalendar.find((r) => r.id === raceId);
+    const race = races.find((r) => r.id === raceId);
     return race ? `${race.countryFlag} R${race.round} · ${race.raceName}` : `Race: ${raceId}`;
   };
 

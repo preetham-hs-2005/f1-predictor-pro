@@ -1,9 +1,24 @@
 import { Router, Request, Response } from "express";
+import { ObjectId } from "mongodb";
 import { Prediction } from "../models/Prediction.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { getDB } from "../utils/db.js";
+import {
+  assertPredictionWindowOpen,
+  findLockedPredictionKeys,
+  normalizePredictionType,
+} from "../utils/raceLocks.js";
 
 const router = Router();
+
+function getStatusCode(error: unknown) {
+  return error &&
+    typeof error === "object" &&
+    "statusCode" in error &&
+    typeof error.statusCode === "number"
+    ? error.statusCode
+    : 500;
+}
 
 // POST /api/predictions/submit
 router.post("/submit", authMiddleware, async (req: Request, res: Response) => {
@@ -14,7 +29,7 @@ router.post("/submit", authMiddleware, async (req: Request, res: Response) => {
 
     const {
       raceWeekendId,
-      type = "race",
+      type: rawType = "race",
       predictedP1,
       predictedP2,
       predictedP3,
@@ -23,12 +38,16 @@ router.post("/submit", authMiddleware, async (req: Request, res: Response) => {
       unexpectedStatement,
     } = req.body;
 
+    const type = normalizePredictionType(rawType);
+
     if (!raceWeekendId || !predictedP1 || !predictedP2 || !predictedP3 || !predictedPole) {
       return res.status(400).json({
         success: false,
         error: "Missing required prediction fields",
       });
     }
+
+    await assertPredictionWindowOpen(raceWeekendId, type);
 
     // Check if prediction already exists
     const existing = await Prediction.findByUserAndRace(
@@ -77,7 +96,7 @@ router.post("/submit", authMiddleware, async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to submit prediction";
     console.error("Prediction submit error:", message);
-    res.status(500).json({ success: false, error: message });
+    res.status(getStatusCode(error)).json({ success: false, error: message });
   }
 });
 
@@ -105,13 +124,12 @@ router.get("/user", authMiddleware, async (req: Request, res: Response) => {
 router.get("/public/:userId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const lockedIdsStr = req.query.lockedIds as string;
-    const lockedIds = lockedIdsStr ? lockedIdsStr.split(",") : [];
+    const lockedKeys = await findLockedPredictionKeys();
 
     const predictions = await Prediction.findByUser(userId);
     
-    // Only return predictions for races that the frontend reports as locked
-    const filteredPredictions = predictions.filter(p => lockedIds.includes(p.raceWeekendId));
+    // Only return predictions whose own type is locked.
+    const filteredPredictions = predictions.filter(p => lockedKeys.includes(`${p.raceWeekendId}:${p.type}`));
 
     res.json({
       success: true,
@@ -130,14 +148,28 @@ router.get("/scores/:userId", authMiddleware, async (req: Request, res: Response
   try {
     const { userId } = req.params;
     const db = getDB();
-    const scoresCollection = db.collection("scores");
+    const scoresCollection = db.collection<{
+      _id?: ObjectId;
+      userId: string;
+      raceId: string;
+      type: "sprint" | "race";
+      p1Points?: number;
+      p2Points?: number;
+      p3Points?: number;
+      polePoints?: number;
+      podiumBonusPoints?: number;
+      constructorPoints?: number;
+      unexpectedPoints?: number;
+      total?: number;
+      createdAt?: Date;
+    }>("scores");
 
     const scores = await scoresCollection
       .find({ userId })
       .toArray();
 
-    const formattedScores = scores.map((score: any) => ({
-      id: score._id.toString(),
+    const formattedScores = scores.map((score) => ({
+      id: score._id?.toString() || "",
       userId: score.userId,
       raceId: score.raceId,
       type: score.type,
@@ -171,7 +203,7 @@ router.get("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
     }
 
     const { raceWeekendId } = req.params;
-    const type = (req.query.type as "sprint" | "race") || "race";
+    const type = normalizePredictionType(req.query.type);
 
     const prediction = await Prediction.findByUserAndRace(
       req.user.userId,
@@ -207,7 +239,7 @@ router.put("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
     }
 
     const { raceWeekendId } = req.params;
-    const type = (req.query.type as "sprint" | "race") || "race";
+    const type = normalizePredictionType(req.query.type);
     const {
       predictedP1,
       predictedP2,
@@ -218,6 +250,8 @@ router.put("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
     } = req.body;
 
     console.log("Update request:", { raceWeekendId, type, predictedP1, predictedPole, predictedConstructor, unexpectedStatement });
+
+    await assertPredictionWindowOpen(raceWeekendId, type);
 
     const existing = await Prediction.findByUserAndRace(
       req.user.userId,
@@ -259,7 +293,7 @@ router.put("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update prediction";
     console.error("Update prediction error:", message);
-    res.status(500).json({ success: false, error: message });
+    res.status(getStatusCode(error)).json({ success: false, error: message });
   }
 });
 
@@ -271,7 +305,9 @@ router.delete("/:raceWeekendId", authMiddleware, async (req: Request, res: Respo
     }
 
     const { raceWeekendId } = req.params;
-    const type = (req.query.type as "sprint" | "race") || "race";
+    const type = normalizePredictionType(req.query.type);
+
+    await assertPredictionWindowOpen(raceWeekendId, type);
 
     const deleted = await Prediction.delete(
       req.user.userId,
@@ -290,7 +326,7 @@ router.delete("/:raceWeekendId", authMiddleware, async (req: Request, res: Respo
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete prediction";
     console.error("Delete prediction error:", message);
-    res.status(500).json({ success: false, error: message });
+    res.status(getStatusCode(error)).json({ success: false, error: message });
   }
 });
 

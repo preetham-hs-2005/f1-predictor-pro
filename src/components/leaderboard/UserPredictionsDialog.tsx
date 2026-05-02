@@ -8,7 +8,8 @@ import {
 import { Loader } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { getUserScores, type UserScore } from "@/lib/api/predictions";
-import { raceCalendar, isRaceLocked } from "@/lib/data/raceCalendar";
+import { getAllRaces } from "@/lib/api/races";
+import { isPredictionLocked, type RaceWeekend } from "@/lib/data/raceCalendar";
 import { LeaderboardEntry } from "@/lib/api/leaderboard";
 import { useDrivers } from "@/hooks/useDrivers";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ interface UserPredictionsDialogProps {
 export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogProps) {
   const [predictions, setPredictions] = useState<any[]>([]);
   const [scores, setScores] = useState<UserScore[]>([]);
+  const [races, setRaces] = useState<RaceWeekend[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -39,8 +41,27 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
       setLoading(true);
       setError(null);
       try {
-        const lockedIds = raceCalendar
-          .filter((r) => isRaceLocked(r))
+        const serverRaces = await getAllRaces();
+        const convertedRaces = serverRaces.map((race) => ({
+          id: race.raceId,
+          raceName: race.raceName,
+          circuitName: race.circuitName,
+          country: race.country || "",
+          countryFlag: race.countryFlag,
+          round: race.round,
+          qualifyingStartTime: race.qualifyingStartTime,
+          raceStartTime: race.raceStartTime,
+          sprintWeekend: race.sprintWeekend,
+          sprintQualifyingStartTime: race.sprintQualifyingStartTime,
+          timeZone: race.timeZone,
+          isLocked: race.isLocked || false,
+          isComplete: race.isComplete || false,
+          cancelled: race.cancelled || false,
+        }));
+        setRaces(convertedRaces);
+
+        const lockedIds = convertedRaces
+          .filter((r) => isPredictionLocked(r, "race") || isPredictionLocked(r, "sprint"))
           .map((r) => r.id)
           .join(",");
           
@@ -67,7 +88,7 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
   }, [user]);
 
   const getRaceName = (raceId: string) => {
-    return raceCalendar.find(r => r.id === raceId)?.raceName || raceId;
+    return races.find(r => r.id === raceId)?.raceName || raceId;
   };
 
   const getScoreForPrediction = (raceId: string, type: string) => {
