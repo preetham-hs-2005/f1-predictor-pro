@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+  import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   FlagTriangleRight,
@@ -32,9 +32,9 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, code: "DSH" },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy, code: "LDR" },
-  { to: "/results", label: "Race Analysis", icon: FlagTriangleRight, code: "RSL" },
+  { to: "/results", label: "Results", icon: FlagTriangleRight, code: "RSL" },
   { to: "/predictions", label: "History", icon: History, code: "HST" },
-  // { to: "/discussions", label: "Discussions", icon: MessageCircle, code: "COM" }, // Temporarily hidden
+  { to: "/discussions", label: "Discussions", icon: MessageCircle, code: "COM" },
 ];
 
 const adminNavItem = { to: "/admin", label: "Admin", icon: Shield, code: "ADM" };
@@ -45,6 +45,7 @@ function StatusBar() {
     "PREDICTION FEED: SYNCED",
     "LOCK WINDOWS: ACTIVE",
     "RESULTS SERVICE: READY",
+    "DISCUSSIONS: LIVE",
   ];
   const stream = [...items, ...items];
 

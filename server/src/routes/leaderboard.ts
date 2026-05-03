@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Leaderboard } from "../models/Leaderboard.js";
 import { Results } from "../models/Results.js";
-import { Championship } from "../models/Championship.js";
+
 import { authMiddleware, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
@@ -107,36 +107,6 @@ router.get("/results/:raceWeekendId", async (req: Request, res: Response) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch race results";
     console.error("Race results error:", message);
-    res.status(500).json({ success: false, error: message });
-  }
-});
-
-// GET /api/leaderboard/championship/drivers - Get F1 driver standings
-router.get("/championship/drivers", async (req: Request, res: Response) => {
-  try {
-    const standings = await Championship.getDriverStandings();
-    res.json({
-      success: true,
-      data: standings,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch driver standings";
-    console.error("Driver standings error:", message);
-    res.status(500).json({ success: false, error: message });
-  }
-});
-
-// GET /api/leaderboard/championship/constructors - Get F1 constructor standings
-router.get("/championship/constructors", async (req: Request, res: Response) => {
-  try {
-    const standings = await Championship.getConstructorStandings();
-    res.json({
-      success: true,
-      data: standings,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch constructor standings";
-    console.error("Constructor standings error:", message);
     res.status(500).json({ success: false, error: message });
   }
 });

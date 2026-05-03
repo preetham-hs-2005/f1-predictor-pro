@@ -95,58 +95,14 @@ async function getJson<T>(path: string, params: Record<string, string | number |
     return cached.data;
   }
 
-  const MAX_RETRIES = 5;
-  const INITIAL_DELAY_MS = 1000; // 1 second
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const response = await fetch(url);
-      
-      // Handle rate limiting with exponential backoff
-      if (response.status === 429) {
-        if (attempt < MAX_RETRIES) {
-          // Calculate delay with exponential backoff and jitter
-          const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
-          const jitter = Math.random() * 0.1 * delay; // Add up to 10% jitter
-          const totalDelay = delay + jitter;
-          
-          console.log(`[OpenF1] Rate limited. Retrying in ${Math.round(totalDelay)}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
-          await new Promise(resolve => setTimeout(resolve, totalDelay));
-          continue;
-        } else {
-          throw new Error(`OpenF1 request failed: 429 Too Many Requests (max retries exceeded)`);
-        }
-      }
-      
-      if (!response.ok) {
-        throw new Error(`OpenF1 request failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data = (await response.json()) as T;
-      cache.set(url, { data, expiresAt: Date.now() + ttl });
-      return data;
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      
-      // If it's not a rate limit error and not a timeout, don't retry
-      if (error instanceof Error && !error.message.includes("429")) {
-        throw error;
-      }
-      
-      // For other errors, continue to retry
-      if (attempt < MAX_RETRIES) {
-        const delay = INITIAL_DELAY_MS * Math.pow(2, attempt);
-        const jitter = Math.random() * 0.1 * delay;
-        const totalDelay = delay + jitter;
-        console.log(`[OpenF1] Request failed, retrying in ${Math.round(totalDelay)}ms (attempt ${attempt + 1}/${MAX_RETRIES}): ${error}`);
-        await new Promise(resolve => setTimeout(resolve, totalDelay));
-      }
-    }
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`OpenF1 request failed: ${response.status} ${response.statusText}`);
   }
 
-  // If we've exhausted retries, throw the last error
-  throw lastError || new Error("OpenF1 request failed after maximum retries");
+  const data = (await response.json()) as T;
+  cache.set(url, { data, expiresAt: Date.now() + ttl });
+  return data;
 }
 
 export async function getSessions(year?: number, country?: string): Promise<OpenF1Session[]> {

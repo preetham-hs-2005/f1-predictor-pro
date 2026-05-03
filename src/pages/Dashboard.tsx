@@ -3,9 +3,12 @@ import { CalendarClock, ChevronRight, Clock3, Cpu, Flag, Gauge, Lock, Target, Ti
 import { Link, useNavigate } from "react-router-dom";
 
 import CountdownTimer from "@/components/dashboard/CountdownTimer";
+import FastestLap from "@/components/FastestLap";
 import { CockpitPanel } from "@/components/layout/CockpitPanel";
+import LiveLeaderboard from "@/components/LiveLeaderboard";
 import Navbar from "@/components/layout/Navbar";
 import { PageShell } from "@/components/layout/PageShell";
+import TelemetryChart from "@/components/TelemetryChart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -319,6 +322,14 @@ const Dashboard = () => {
                 })}
               </div>
             </CockpitPanel>
+
+            <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+              <LiveLeaderboard sessionKey={sessionKey} />
+              <div className="grid gap-6">
+                <FastestLap sessionKey={sessionKey} />
+                <TelemetryChart sessionKey={sessionKey} driverNumber={1} />
+              </div>
+            </div>
 
             <div className="panel mt-8 flex flex-wrap items-center gap-x-8 gap-y-2 p-4 data-mono text-[10px] text-muted-foreground">
               <span className="flex items-center gap-2">
