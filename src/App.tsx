@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OpenF1SessionProvider } from "@/contexts/OpenF1SessionContext";
 import { SetUsernameModal } from "@/components/auth/SetUsernameModal";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -22,7 +23,8 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
+      <OpenF1SessionProvider>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <SetUsernameModal />
@@ -41,7 +43,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </OpenF1SessionProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

@@ -20,6 +20,7 @@ import leaderboardRoutes from "./routes/leaderboard.js";
 import adminRoutes from "./routes/admin.js";
 import discussionsRoutes from "./routes/discussions.js";
 import driversRoutes from "./routes/drivers.js";
+import openF1Routes from "./routes/openf1.js";
 import { Driver } from "./models/Driver.js";
 
 const app = express();
@@ -121,6 +122,7 @@ app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/discussions", discussionsRoutes);
 app.use("/api/drivers", driversRoutes);
+app.use("/api/openf1", openF1Routes);
 
 // Health check
 app.get("/health", (req, res) => {

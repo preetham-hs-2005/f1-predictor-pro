@@ -18,6 +18,9 @@ export interface ServerRace {
   sprintWeekend: boolean;
   sprintQualifyingStartTime?: string | null;
   sprintStartTime?: string | null;
+  openF1QualifyingSessionKey?: number | null;
+  openF1RaceSessionKey?: number | null;
+  openF1SprintQualifyingSessionKey?: number | null;
   cancelled: boolean;
   isLocked?: boolean;
   isComplete?: boolean;

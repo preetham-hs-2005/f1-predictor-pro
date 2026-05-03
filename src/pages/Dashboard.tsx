@@ -9,6 +9,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOpenF1Session } from "@/contexts/OpenF1SessionContext";
 import { getUpcomingRacesFromServer } from "@/lib/api/races";
 import { getPredictionLockTime, isRaceLocked, isSprintLocked, type RaceWeekend } from "@/lib/data/raceCalendar";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const getSprintStartTime = (race: RaceWeekend) => {
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const { sessionKey, setSessionKey } = useOpenF1Session();
   const navigate = useNavigate();
   const [upcoming, setUpcoming] = useState<RaceWeekend[]>([]);
   const [racesLoading, setRacesLoading] = useState(true);
@@ -48,6 +50,17 @@ const Dashboard = () => {
   useEffect(() => {
     loadRaces();
   }, []);
+
+  const nextRace = upcoming[0];
+  const liveSessionKey =
+    nextRace?.openF1RaceSessionKey ||
+    nextRace?.openF1QualifyingSessionKey ||
+    nextRace?.openF1SprintQualifyingSessionKey ||
+    null;
+
+  useEffect(() => {
+    setSessionKey(liveSessionKey);
+  }, [liveSessionKey, setSessionKey]);
 
   const loadRaces = async () => {
     setRacesLoading(true);
@@ -66,6 +79,9 @@ const Dashboard = () => {
         sprintWeekend: race.sprintWeekend,
         sprintQualifyingStartTime: race.sprintQualifyingStartTime,
         sprintStartTime: race.sprintStartTime,
+        openF1QualifyingSessionKey: race.openF1QualifyingSessionKey,
+        openF1RaceSessionKey: race.openF1RaceSessionKey,
+        openF1SprintQualifyingSessionKey: race.openF1SprintQualifyingSessionKey,
         timeZone: race.timeZone,
         isLocked: race.isLocked || false,
         isComplete: race.isComplete || false,
@@ -89,7 +105,6 @@ const Dashboard = () => {
     );
   }
 
-  const nextRace = upcoming[0];
   const sprintCount = upcoming.filter((race) => race.sprintWeekend).length;
   const openRaceWindows = upcoming.filter((race) => !race.cancelled && !race.isComplete && !isRaceLocked(race)).length;
   const openSprintWindows = upcoming.filter((race) => race.sprintWeekend && !isSprintLocked(race)).length;

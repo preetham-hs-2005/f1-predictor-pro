@@ -1,4 +1,6 @@
 import { getDB } from "./db.js";
+import { getPredictionSessionForRace } from "../services/openf1Service.js";
+import { isPredictionLocked as isOpenF1PredictionLocked } from "./timeUtils.js";
 
 const LOCK_BUFFER_MS = 60_000;
 
@@ -7,9 +9,11 @@ export type PredictionType = "race" | "sprint";
 interface RaceRecord {
   raceId: string;
   raceName?: string;
+  country?: string;
   sprintWeekend?: boolean;
   sprintQualifyingStartTime?: string | null;
   qualifyingStartTime?: string | null;
+  raceStartTime?: string | null;
   cancelled?: boolean;
   isLocked?: boolean;
 }
@@ -47,6 +51,40 @@ export function getPredictionTimestamp(prediction: any): Date | null {
   return Number.isNaN(timestamp.getTime()) ? null : timestamp;
 }
 
+async function getOpenF1PredictionSessionStart(
+  race: RaceRecord,
+  type: PredictionType
+): Promise<string | null> {
+  try {
+    const session = await getPredictionSessionForRace(race, type);
+    return session?.date_start || null;
+  } catch (error) {
+    console.warn(
+      `OpenF1 session lookup failed for ${race.raceName || race.raceId}:`,
+      error instanceof Error ? error.message : error
+    );
+    return null;
+  }
+}
+
+async function isRacePredictionLocked(race: RaceRecord, type: PredictionType): Promise<{ locked: boolean; lockDate: Date | null }> {
+  const openF1SessionStart = await getOpenF1PredictionSessionStart(race, type);
+
+  if (openF1SessionStart) {
+    const lockDate = new Date(openF1SessionStart);
+    return {
+      locked: isOpenF1PredictionLocked(openF1SessionStart),
+      lockDate: Number.isNaN(lockDate.getTime()) ? null : lockDate,
+    };
+  }
+
+  const lockDate = getPredictionLockDate(race, type);
+  return {
+    locked: !lockDate || new Date() >= lockDate,
+    lockDate,
+  };
+}
+
 export function isPredictionDisqualified(
   race: RaceRecord,
   prediction: any,
@@ -77,8 +115,8 @@ export async function assertPredictionWindowOpen(
     throw Object.assign(new Error("Sprint predictions are not available for this race"), { statusCode: 400 });
   }
 
-  const lockDate = getPredictionLockDate(race, type);
-  const locked = race.cancelled || race.isLocked || !lockDate || new Date() >= lockDate;
+  const { locked: timeLocked, lockDate } = await isRacePredictionLocked(race, type);
+  const locked = race.cancelled || race.isLocked || timeLocked;
 
   if (locked) {
     throw Object.assign(
@@ -94,23 +132,24 @@ export async function assertPredictionWindowOpen(
 export async function findLockedPredictionKeys(): Promise<string[]> {
   const db = getDB();
   const races = await db.collection<RaceRecord>("races").find({}).toArray();
-  const now = new Date();
 
-  return races.flatMap((race) => {
+  const keysByRace = await Promise.all(races.map(async (race) => {
     const keys: string[] = [];
 
-    const raceLockDate = getPredictionLockDate(race, "race");
-    if (race.cancelled || race.isLocked || !raceLockDate || now >= raceLockDate) {
+    const raceLock = await isRacePredictionLocked(race, "race");
+    if (race.cancelled || race.isLocked || raceLock.locked) {
       keys.push(`${race.raceId}:race`);
     }
 
     if (race.sprintWeekend) {
-      const sprintLockDate = getPredictionLockDate(race, "sprint");
-      if (race.cancelled || race.isLocked || !sprintLockDate || now >= sprintLockDate) {
+      const sprintLock = await isRacePredictionLocked(race, "sprint");
+      if (race.cancelled || race.isLocked || sprintLock.locked) {
         keys.push(`${race.raceId}:sprint`);
       }
     }
 
     return keys;
-  });
+  }));
+
+  return keysByRace.flat();
 }

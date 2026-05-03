@@ -7,8 +7,31 @@ import {
   isPredictionDisqualified,
   normalizePredictionType,
 } from "../utils/raceLocks.js";
+import { getOpenF1CountryName, getSessionByType, getSessions } from "../services/openf1Service.js";
 
 const router = Router();
+
+interface RaceAdminRecord {
+  _id: ObjectId;
+  raceId: string;
+  raceName?: string;
+  round: number;
+  country?: string;
+  countryFlag?: string;
+  circuitName?: string;
+  qualifyingStartTime?: string;
+  raceStartTime?: string;
+  timeZone?: string;
+  sprintWeekend?: boolean;
+  sprintQualifyingStartTime?: string | null;
+  sprintStartTime?: string | null;
+  openF1QualifyingSessionKey?: number | null;
+  openF1RaceSessionKey?: number | null;
+  openF1SprintQualifyingSessionKey?: number | null;
+  cancelled?: boolean;
+  isLocked?: boolean;
+  isComplete?: boolean;
+}
 
 async function updateUserTotalPoints(db: Db, userId: string): Promise<void> {
   const scoresCollection = db.collection("scores");
@@ -39,11 +62,41 @@ router.get("/races", async (req: Request, res: Response) => {
     const db = getDB();
     const racesCollection = db.collection("races");
     
-    const races = await racesCollection.find({}).sort({ round: 1 }).toArray();
+    const races = await racesCollection.find({}).sort({ round: 1 }).toArray() as RaceAdminRecord[];
+    const enrichedRaces = await Promise.all(
+      races.map(async (r) => {
+        try {
+          const raceDate = r.raceStartTime ? new Date(r.raceStartTime) : null;
+          const openF1Country = getOpenF1CountryName(r);
+          const sessions =
+            openF1Country && raceDate && !Number.isNaN(raceDate.getTime())
+              ? await getSessions(raceDate.getUTCFullYear(), openF1Country)
+              : [];
+          const qualifyingSession = getSessionByType(sessions, "Qualifying");
+          const raceSession = getSessionByType(sessions, "Race");
+          const sprintQualifyingSession = r.sprintWeekend ? getSessionByType(sessions, "Sprint Qualifying") : null;
+
+          return {
+            ...r,
+            openF1QualifyingSessionKey: qualifyingSession?.session_key || null,
+            openF1RaceSessionKey: raceSession?.session_key || null,
+            openF1SprintQualifyingSessionKey: sprintQualifyingSession?.session_key || null,
+            qualifyingStartTime: qualifyingSession?.date_start || r.qualifyingStartTime,
+            sprintQualifyingStartTime: sprintQualifyingSession?.date_start || r.sprintQualifyingStartTime,
+          };
+        } catch (error) {
+          console.warn(
+            `OpenF1 race enrichment failed for ${r.raceName || r.raceId}:`,
+            error instanceof Error ? error.message : error
+          );
+          return r;
+        }
+      })
+    );
     
     res.json({
       success: true,
-      data: races.map((r: any) => ({
+      data: enrichedRaces.map((r) => ({
         id: r._id.toString(),
         raceId: r.raceId,
         raceName: r.raceName,
@@ -57,6 +110,9 @@ router.get("/races", async (req: Request, res: Response) => {
         sprintWeekend: r.sprintWeekend,
         sprintQualifyingStartTime: r.sprintQualifyingStartTime,
         sprintStartTime: r.sprintStartTime,
+        openF1QualifyingSessionKey: r.openF1QualifyingSessionKey || null,
+        openF1RaceSessionKey: r.openF1RaceSessionKey || null,
+        openF1SprintQualifyingSessionKey: r.openF1SprintQualifyingSessionKey || null,
         cancelled: r.cancelled || false,
         isLocked: r.isLocked || false,
         isComplete: r.isComplete || false,

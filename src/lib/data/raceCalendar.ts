@@ -7,6 +7,9 @@ export interface RaceWeekend {
   round: number;
   sprintQualifyingStartTime?: string | null;
   sprintStartTime?: string | null;
+  openF1QualifyingSessionKey?: number | null;
+  openF1RaceSessionKey?: number | null;
+  openF1SprintQualifyingSessionKey?: number | null;
   qualifyingStartTime: string;
   raceStartTime: string;
   sprintWeekend: boolean;
