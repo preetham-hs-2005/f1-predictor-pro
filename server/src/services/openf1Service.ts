@@ -35,6 +35,34 @@ export interface OpenF1CarData {
   speed?: number | null;
 }
 
+export async function getRaceControl(session_key: number | string) {
+  return getJson<any[]>("/race_control", { session_key }, 6_000);
+}
+
+export async function getStints(session_key: number | string) {
+  return getJson<any[]>("/stints", { session_key }, 10_000);
+}
+
+export async function getPit(session_key: number | string) {
+  return getJson<any[]>("/pit", { session_key }, 10_000);
+}
+
+export async function getTeamRadio(session_key: number | string) {
+  return getJson<any[]>("/team_radio", { session_key }, 10_000);
+}
+
+export async function getWeather(session_key: number | string) {
+  return getJson<any[]>("/weather", { session_key }, 10_000);
+}
+
+export async function getDrivers(session_key: number | string) {
+  return getJson<any[]>("/drivers", { session_key }, 60_000);
+}
+
+export async function getConstructors(session_key: number | string) {
+  return getJson<any[]>("/teams", { session_key }, 60_000);
+}
+
 const cache = new Map<string, CacheEntry<unknown>>();
 
 const COUNTRY_ALIASES: Record<string, string> = {
@@ -97,6 +125,9 @@ async function getJson<T>(path: string, params: Record<string, string | number |
 
   const response = await fetch(url);
   if (!response.ok) {
+    if (response.status === 404 || response.status === 400) {
+      return [] as T;
+    }
     throw new Error(`OpenF1 request failed: ${response.status} ${response.statusText}`);
   }
 

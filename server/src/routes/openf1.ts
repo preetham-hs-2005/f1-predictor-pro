@@ -3,8 +3,15 @@ import {
   getCarData,
   getLaps,
   getPositions,
+  getPit,
+  getRaceControl,
   getSessionByType,
   getSessions,
+  getStints,
+  getTeamRadio,
+  getWeather,
+  getDrivers,
+  getConstructors,
 } from "../services/openf1Service.js";
 
 const router = Router();
@@ -60,5 +67,60 @@ router.get("/car-data/:sessionKey/:driverNumber", async (req: Request, res: Resp
   }
 });
 
-export default router;
+router.get("/race-control/:sessionKey", async (req: Request, res: Response) => {
+  try {
+    return ok(res, await getRaceControl(req.params.sessionKey));
+  } catch (error) {
+    return fail(res, error);
+  }
+});
 
+router.get("/stints/:sessionKey", async (req: Request, res: Response) => {
+  try {
+    return ok(res, await getStints(req.params.sessionKey));
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
+router.get("/pit/:sessionKey", async (req: Request, res: Response) => {
+  try {
+    return ok(res, await getPit(req.params.sessionKey));
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
+router.get("/team-radio/:sessionKey", async (req: Request, res: Response) => {
+  try {
+    return ok(res, await getTeamRadio(req.params.sessionKey));
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
+router.get("/weather/:sessionKey", async (req: Request, res: Response) => {
+  try {
+    return ok(res, await getWeather(req.params.sessionKey));
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
+router.get("/drivers/:sessionKey", async (req: Request, res: Response) => {
+  try {
+    return ok(res, await getDrivers(req.params.sessionKey));
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
+router.get("/constructors/:sessionKey", async (req: Request, res: Response) => {
+  try {
+    return ok(res, await getConstructors(req.params.sessionKey));
+  } catch (error) {
+    return fail(res, error);
+  }
+});
+
+export default router;

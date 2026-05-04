@@ -1,288 +1,168 @@
-import { useEffect, useState } from "react";
-import { AlertCircle, Flag, Loader, ShieldCheck, Trophy, Zap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, Loader } from "lucide-react";
 
-import { CockpitPanel } from "@/components/layout/CockpitPanel";
 import Navbar from "@/components/layout/Navbar";
 import { PageShell } from "@/components/layout/PageShell";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
-import { useDrivers } from "@/hooks/useDrivers";
-import { apiClient } from "@/lib/api/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAllRaces } from "@/lib/api/races";
-import { type RaceWeekend } from "@/lib/data/raceCalendar";
-import { cn } from "@/lib/utils";
-
-interface RaceResult {
-  id: string;
-  raceId: string;
-  type: "sprint" | "race";
-  p1: string;
-  p2: string;
-  p3: string;
-  pole: string;
-  fastestLap?: string;
-  dnfCount?: number;
-  safetyCars?: number;
-  redFlags?: number;
-  bestConstructor?: string;
-  isOfficial: boolean;
-}
+import {
+  getOpenF1Constructors,
+  getOpenF1Drivers,
+  getOpenF1Laps,
+  getOpenF1Pit,
+  getOpenF1Positions,
+  getOpenF1RaceControl,
+  getOpenF1Sessions,
+  getOpenF1Stints,
+  getOpenF1TeamRadio,
+  getOpenF1Weather,
+} from "@/lib/api/openf1";
 
 const Results = () => {
-  const { isAuthenticated, isLoading: authIsLoading } = useAuth();
-  const { drivers } = useDrivers();
-  const [races, setRaces] = useState<RaceWeekend[]>([]);
-  const [selectedRaceId, setSelectedRaceId] = useState<string>("");
-  const [results, setResults] = useState<RaceResult[]>([]);
+  const [races, setRaces] = useState<any[]>([]);
+  const [selectedRaceId, setSelectedRaceId] = useState("");
+  const [data, setData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getDriverName = (id?: string) => {
-    if (!id) return "TBC";
-    const driver = drivers.find((d) => d.id === id);
-    return driver ? driver.name : id;
-  };
-
-  const now = new Date();
-  const completedRaces = races
-    .filter((race) => !race.cancelled && new Date(race.raceStartTime) < now)
-    .sort((a, b) => a.round - b.round);
+  const completedRaces = useMemo(
+    () => races.filter((r) => !r.cancelled && new Date(r.raceStartTime) < new Date()).sort((a, b) => a.round - b.round),
+    [races],
+  );
 
   useEffect(() => {
-    const fetchRaces = async () => {
-      const serverRaces = await getAllRaces();
-      const converted = serverRaces.map((race) => ({
-        id: race.raceId,
-        raceName: race.raceName,
-        circuitName: race.circuitName,
-        country: race.country || "",
-        countryFlag: race.countryFlag,
-        round: race.round,
-        qualifyingStartTime: race.qualifyingStartTime,
-        raceStartTime: race.raceStartTime,
-        sprintWeekend: race.sprintWeekend,
-        sprintQualifyingStartTime: race.sprintQualifyingStartTime,
-        sprintStartTime: race.sprintStartTime,
-        timeZone: race.timeZone,
-        isLocked: race.isLocked || false,
-        isComplete: race.isComplete || false,
-        cancelled: race.cancelled || false,
-      }));
-      setRaces(converted);
+    getAllRaces().then((list) => {
+      setRaces(list);
+      const completed = list.filter((r) => !r.cancelled && new Date(r.raceStartTime) < new Date()).sort((a, b) => a.round - b.round);
+      if (completed.length) setSelectedRaceId(completed[completed.length - 1].raceId);
+    });
+  }, []);
 
-      const completed = converted
-        .filter((race) => !race.cancelled && new Date(race.raceStartTime) < new Date())
-        .sort((a, b) => a.round - b.round);
-      if (!selectedRaceId && completed.length > 0) {
-        setSelectedRaceId(completed[completed.length - 1].id);
+  useEffect(() => {
+    const run = async () => {
+      if (!selectedRaceId) return;
+      const race = races.find((r) => r.raceId === selectedRaceId);
+      if (!race) return;
+
+      const raceStart = new Date(race.raceStartTime);
+      const raceEndBuffer = new Date(raceStart.getTime() + 5 * 60 * 60 * 1000);
+      if (new Date() < raceEndBuffer) {
+        setData(null);
+        setError("Race weekend is still active. OpenF1 polling is paused until after the event window.");
+        return;
       }
-    };
 
-    fetchRaces();
-  }, [selectedRaceId]);
-
-  useEffect(() => {
-    if (authIsLoading) return;
-    if (!selectedRaceId || !isAuthenticated) return;
-
-    const fetchResults = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const res = await apiClient.get<any>(`/api/leaderboard/results/${selectedRaceId}`);
-        if (res.success && res.data) {
-          setResults(res.data);
-        } else {
-          setError(res.error || "Failed to load results");
-        }
-      } catch (err: any) {
-        setError(err.message || "Failed to load results");
+        const sessions = await getOpenF1Sessions(raceStart.getUTCFullYear(), race.country || undefined as any);
+        const raceName = String(race.raceName || "").toLowerCase();
+        const raceSession = Array.isArray(sessions)
+          ? sessions.find((s: any) => `${s.session_name} ${s.session_type}`.toLowerCase().includes("race") && (!raceName || `${s.session_name || ""}`.toLowerCase().includes(raceName.split(" ")[0])))
+            || sessions.find((s: any) => `${s.session_name} ${s.session_type}`.toLowerCase().includes("race"))
+          : null;
+
+        if (!raceSession?.session_key) throw new Error("OpenF1 race session not found for this round.");
+
+        const sessionKey = raceSession.session_key;
+        const settled = await Promise.allSettled([
+          getOpenF1Drivers(sessionKey),
+          getOpenF1Constructors(sessionKey),
+          getOpenF1Positions(sessionKey),
+          getOpenF1Laps(sessionKey),
+          getOpenF1RaceControl(sessionKey),
+          getOpenF1Pit(sessionKey),
+          getOpenF1Stints(sessionKey),
+          getOpenF1TeamRadio(sessionKey),
+          getOpenF1Weather(sessionKey),
+        ]);
+
+        const pick = (index: number) => (settled[index].status === "fulfilled" ? settled[index].value : []);
+        const drivers = pick(0);
+        const constructors = pick(1);
+        const positions = pick(2);
+        const laps = pick(3);
+        const raceControl = pick(4);
+        const pit = pick(5);
+        const stints = pick(6);
+        const teamRadio = pick(7);
+        const weather = pick(8);
+
+        setData({ drivers, constructors, positions, laps, raceControl, pit, stints, teamRadio, weather });
+      } catch (e: any) {
+        setError(e.message || "Failed to load OpenF1 race analysis.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchResults();
-  }, [selectedRaceId, isAuthenticated, authIsLoading]);
+    run();
+  }, [selectedRaceId, races]);
 
-  const selectedRace = races.find((race) => race.id === selectedRaceId);
-  const primaryResult = results.find((result) => result.type === "race") || results[0];
+  const selectedRace = races.find((r) => r.raceId === selectedRaceId);
+
+  const previewTable = (rows: any[], cols: string[]) => (
+    <div className="overflow-auto border border-border bg-surface-1">
+      <table className="w-full text-sm">
+        <thead className="bg-surface-2/70 text-left">
+          <tr>{cols.map((c) => <th key={c} className="px-3 py-2">{c}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.slice(0, 20).map((r, i) => (
+            <tr key={i} className="border-t border-border/60">{cols.map((c) => <td key={c} className="px-3 py-2">{String(r?.[c] ?? "-")}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <PageShell>
       <Navbar />
-      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-        <section className="panel panel-corners overflow-hidden">
-          <div className="relative p-5 sm:p-7 lg:p-8">
-            <div className="checker absolute right-0 top-0 h-72 w-72 opacity-[0.05]" />
-            <div className="relative grid gap-8 xl:grid-cols-[1fr_420px] xl:items-end">
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="label-eyebrow">Classification board</span>
-                  <span className="h-px w-16 bg-border" />
-                  <Badge className="badge-signal">{completedRaces.length} completed</Badge>
-                </div>
-                <h1 className="display mt-7 max-w-4xl text-5xl font-bold leading-[0.95] text-white sm:text-7xl">
-                  Results Control
-                </h1>
-                <p className="data-mono mt-5 max-w-2xl text-sm uppercase leading-6 text-muted-foreground">
-                  Pick a completed round and inspect the official podium, pole, constructor, and race notes.
-                </p>
-              </div>
-              <div className="border border-border bg-surface-2/40 p-5">
-                <p className="label-eyebrow">Selected event</p>
-                <p className="display mt-3 truncate text-3xl font-bold text-white">
-                  {selectedRace ? `${selectedRace.countryFlag} ${selectedRace.raceName}` : "None"}
-                </p>
-                <p className="data-mono mt-2 truncate text-xs uppercase text-muted-foreground">
-                  {selectedRace ? `R${selectedRace.round} / ${selectedRace.circuitName}` : "No completed race selected"}
-                </p>
-              </div>
-            </div>
+      <main className="mx-auto max-w-7xl px-4 pb-12 pt-24">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-4xl font-bold text-white">Race Analysis</h1>
+          <Badge className="badge-signal">OpenF1 Powered</Badge>
+        </div>
+
+        <div className="mb-6 overflow-x-auto border border-border bg-surface-1">
+          <div className="flex min-w-max">
+            {completedRaces.map((race) => (
+              <button key={race.raceId} onClick={() => setSelectedRaceId(race.raceId)} className={`w-56 border-r border-border px-4 py-3 text-left ${selectedRaceId === race.raceId ? "bg-signal/10" : ""}`}>
+                <div className="text-xs text-muted-foreground">R{race.round}</div>
+                <div className="font-semibold text-white">{race.raceName}</div>
+              </button>
+            ))}
           </div>
-        </section>
+        </div>
 
-        {authIsLoading ? (
-          <section className="section-card mt-8 flex min-h-[360px] flex-col items-center justify-center">
-            <Loader className="mb-4 h-8 w-8 animate-spin text-signal" />
-            <p className="data-mono text-muted-foreground">Checking session...</p>
-          </section>
-        ) : completedRaces.length === 0 ? (
-          <section className="section-card mt-8 text-center">
-            <p className="display text-2xl font-semibold text-white">No completed races yet</p>
-            <p className="data-mono mt-3 text-sm text-white/60">Results will appear after completed races.</p>
-          </section>
-        ) : (
-          <>
-            <section className="mt-8 overflow-x-auto border border-border bg-surface-1">
-              <div className="flex min-w-max divide-x divide-border">
-                {completedRaces.map((race) => (
-                  <button
-                    key={race.id}
-                    onClick={() => setSelectedRaceId(race.id)}
-                    className={cn(
-                      "w-64 px-4 py-4 text-left transition-colors hover:bg-surface-2/60",
-                      selectedRaceId === race.id && "bg-signal/10",
-                    )}
-                  >
-                    <p className="data-mono text-xs text-muted-foreground">R{race.round}</p>
-                    <p className="mt-2 text-3xl">{race.countryFlag}</p>
-                    <p className="display mt-2 truncate text-lg font-semibold text-white">{race.raceName}</p>
-                  </button>
-                ))}
-              </div>
-            </section>
+        <div className="mb-4 text-sm text-muted-foreground">{selectedRace ? `${selectedRace.countryFlag} ${selectedRace.raceName}` : "Select a race"}</div>
 
-            <section className="mt-8 grid gap-6 xl:grid-cols-[1fr_420px]">
-              <CockpitPanel
-                code="CLS.01"
-                title="Official classification"
-                action={
-                  primaryResult?.isOfficial && (
-                    <Badge className="border-signal/30 bg-signal/10 text-signal">
-                      <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
-                      Official
-                    </Badge>
-                  )
-                }
-                corners
-              >
-                {isLoading ? (
-                  <div className="flex min-h-[360px] flex-col items-center justify-center">
-                    <Loader className="mb-4 h-8 w-8 animate-spin text-signal" />
-                    <p className="data-mono text-muted-foreground">Loading results...</p>
-                  </div>
-                ) : selectedRace?.cancelled ? (
-                  <div className="m-5 border border-destructive/20 bg-destructive/10 p-6 text-center">
-                    <p className="display text-2xl font-semibold text-destructive">This race was cancelled.</p>
-                  </div>
-                ) : error ? (
-                  <div className="m-5 border border-destructive/20 bg-destructive/10 p-5">
-                    <div className="flex items-start gap-4">
-                      <AlertCircle className="h-6 w-6 shrink-0 text-destructive" />
-                      <div>
-                        <h3 className="display text-xl font-semibold text-destructive">Failed to load results</h3>
-                        <p className="data-mono mt-2 text-sm text-white/65">{error}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : results.length === 0 ? (
-                  <div className="flex min-h-[320px] items-center justify-center p-8 text-center">
-                    <p className="data-mono text-white/60">No results have been published for {selectedRace?.raceName}.</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {results.map((result) => (
-                      <article key={result.id} className="p-5">
-                        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <Badge variant="outline" className={result.type === "sprint" ? "border-warning/30 bg-warning/10 text-warning" : "border-signal/30 bg-signal/10 text-signal"}>
-                              {result.type === "sprint" ? <Zap className="mr-1 h-3 w-3" /> : <Flag className="mr-1 h-3 w-3" />}
-                              {result.type}
-                            </Badge>
-                            <h2 className="display mt-3 text-2xl font-bold text-white">{selectedRace?.raceName}</h2>
-                          </div>
-                        </div>
+        {isLoading && <div className="section-card flex items-center gap-2"><Loader className="h-4 w-4 animate-spin" /> Loading OpenF1 data…</div>}
+        {error && <div className="section-card border-destructive/30 text-destructive flex items-center gap-2"><AlertCircle className="h-4 w-4" /> {error}</div>}
 
-                        <div className="grid gap-3 md:grid-cols-3">
-                          {[
-                            ["P1", result.p1, "border-signal/50 bg-signal/10 text-signal"],
-                            ["P2", result.p2, "border-f1-silver/40 bg-white/5 text-white"],
-                            ["P3", result.p3, "border-f1-bronze/40 bg-f1-bronze/10 text-f1-bronze"],
-                          ].map(([label, driver, classes]) => (
-                            <div key={label} className={cn("border p-4", classes)}>
-                              <p className="data-mono text-xs font-bold">{label}</p>
-                              <p className="display mt-4 truncate text-2xl font-bold text-white">{getDriverName(driver)}</p>
-                            </div>
-                          ))}
-                        </div>
+        {data && (
+          <Tabs defaultValue="standings" className="mt-4">
+            <TabsList className="grid w-full grid-cols-3 md:grid-cols-9">
+              <TabsTrigger value="standings">Standings</TabsTrigger><TabsTrigger value="position">Position</TabsTrigger><TabsTrigger value="laps">Laps</TabsTrigger><TabsTrigger value="stints">Stints</TabsTrigger><TabsTrigger value="pit">Pit</TabsTrigger><TabsTrigger value="raceControl">Race Ctrl</TabsTrigger><TabsTrigger value="radio">Radio</TabsTrigger><TabsTrigger value="weather">Weather</TabsTrigger><TabsTrigger value="telemetry">Telemetry</TabsTrigger>
+            </TabsList>
 
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">
-                          <div className="border border-border bg-surface-2/50 p-4">
-                            <p className="label-eyebrow">Pole position</p>
-                            <p className="display mt-3 text-xl font-semibold text-white">{getDriverName(result.pole)}</p>
-                          </div>
-                          <div className="border border-border bg-surface-2/50 p-4">
-                            <p className="label-eyebrow">Best constructor</p>
-                            <p className="display mt-3 text-xl font-semibold text-white">{result.bestConstructor || "TBC"}</p>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </CockpitPanel>
-
-              <aside className="space-y-6">
-                <CockpitPanel code="NOTES" title="Race notes" bodyClassName="p-4" corners>
-                  <div className="grid gap-3">
-                    {[
-                      ["Safety cars", primaryResult?.safetyCars ?? 0],
-                      ["Red flags", primaryResult?.redFlags ?? 0],
-                      ["DNFs", primaryResult?.dnfCount ?? 0],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex items-center justify-between border border-border bg-surface-2/50 px-4 py-3">
-                        <span className="label-eyebrow">{label}</span>
-                        <span className="data-mono text-xl font-bold text-white">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CockpitPanel>
-
-                <CockpitPanel code="POD" title="Winner signal" bodyClassName="p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center border border-signal bg-signal/10 text-signal">
-                      <Trophy className="h-8 w-8" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="label-eyebrow">Classified P1</p>
-                      <p className="display mt-2 truncate text-2xl font-bold text-white">{getDriverName(primaryResult?.p1)}</p>
-                    </div>
-                  </div>
-                </CockpitPanel>
-              </aside>
-            </section>
-          </>
+            <TabsContent value="standings" className="space-y-4">
+              <h2 className="text-xl font-semibold text-white">Driver Championship</h2>
+              {previewTable(data.drivers, ["driver_number", "full_name", "team_name", "points", "position"])}
+              <h2 className="text-xl font-semibold text-white">Constructor Championship</h2>
+              {previewTable(data.constructors, ["name", "points", "position"])}
+            </TabsContent>
+            <TabsContent value="position">{previewTable(data.positions, ["date", "driver_number", "position", "gap_to_leader"])}</TabsContent>
+            <TabsContent value="laps">{previewTable(data.laps, ["driver_number", "lap_number", "lap_duration"])}</TabsContent>
+            <TabsContent value="stints">{previewTable(data.stints, ["driver_number", "lap_start", "lap_end", "compound"])}</TabsContent>
+            <TabsContent value="pit">{previewTable(data.pit, ["driver_number", "lap_number", "pit_duration", "date"])}</TabsContent>
+            <TabsContent value="raceControl">{previewTable(data.raceControl, ["date", "driver_number", "category", "message"])} </TabsContent>
+            <TabsContent value="radio">{previewTable(data.teamRadio, ["date", "driver_number", "recording_url"])}</TabsContent>
+            <TabsContent value="weather">{previewTable(data.weather, ["date", "air_temperature", "track_temperature", "rainfall", "humidity"])}</TabsContent>
+            <TabsContent value="telemetry"><p className="text-sm text-muted-foreground">Telemetry can be loaded per driver on demand to keep the UI lightweight.</p></TabsContent>
+          </Tabs>
         )}
       </main>
     </PageShell>
