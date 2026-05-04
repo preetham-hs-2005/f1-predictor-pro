@@ -125,6 +125,9 @@ async function getJson<T>(path: string, params: Record<string, string | number |
 
   const response = await fetch(url);
   if (!response.ok) {
+    if (response.status === 404 || response.status === 400) {
+      return [] as T;
+    }
     throw new Error(`OpenF1 request failed: ${response.status} ${response.statusText}`);
   }
 

@@ -33,8 +33,9 @@ async function getData<T>(endpoint: string): Promise<T> {
   return response.data as T;
 }
 
-export const getOpenF1Sessions = (year: number, country: string, type?: string) => {
-  const params = new URLSearchParams({ year: String(year), country });
+export const getOpenF1Sessions = (year: number, country?: string, type?: string) => {
+  const params = new URLSearchParams({ year: String(year) });
+  if (country) params.set("country", country);
   if (type) params.set("type", type);
   return getData<OpenF1Session[] | OpenF1Session | null>(`/api/openf1/sessions?${params.toString()}`);
 };
