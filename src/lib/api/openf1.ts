@@ -29,8 +29,8 @@ export interface CarDataSample {
 }
 
 async function getData<T>(endpoint: string): Promise<T> {
-  const response = await client.get<{ success: boolean; data?: T }>(endpoint);
-  return response.data as T;
+  const response = await client.get<{ success: boolean; data?: T; warning?: string }>(endpoint);
+  return (response.data ?? []) as T;
 }
 
 export const getOpenF1Sessions = (year: number, country?: string, type?: string) => {

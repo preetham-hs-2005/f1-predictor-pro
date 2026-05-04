@@ -12,9 +12,11 @@ import {
   getWeather,
   getDrivers,
   getConstructors,
+  isOpenF1RateLimitError,
 } from "../services/openf1Service.js";
 
 const router = Router();
+let lastRateLimitLogAt = 0;
 
 function ok(res: Response, data: unknown) {
   return res.json({ success: true, data: Array.isArray(data) ? data : data || null });
@@ -22,6 +24,14 @@ function ok(res: Response, data: unknown) {
 
 function fail(res: Response, error: unknown) {
   const message = error instanceof Error ? error.message : "OpenF1 request failed";
+  if (isOpenF1RateLimitError(error)) {
+    if (Date.now() - lastRateLimitLogAt > 60_000) {
+      console.warn("OpenF1 routes paused: API rate limit reached.");
+      lastRateLimitLogAt = Date.now();
+    }
+    return res.json({ success: true, data: [], warning: message });
+  }
+
   console.error("OpenF1 route error:", message);
   return res.status(502).json({ success: false, error: message });
 }

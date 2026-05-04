@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Leaderboard from "./pages/Leaderboard";
+import Standings from "./pages/Standings";
 import Results from "./pages/Results";
 import Predict from "./pages/Predict";
 import PredictionHistory from "./pages/PredictionHistory";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/standings" element={<Standings />} />
             <Route path="/results" element={<Results />} />
             <Route path="/predictions" element={<PredictionHistory />} />
             <Route path="/predict/:raceId/:type?" element={<Predict />} />

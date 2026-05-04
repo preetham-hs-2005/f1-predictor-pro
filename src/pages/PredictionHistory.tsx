@@ -204,7 +204,7 @@ const PredictionHistory = () => {
 
             {selected && (
               <article className="panel panel-corners overflow-hidden">
-                <div className="grid lg:grid-cols-[1fr_300px]">
+                <div>
                   <div className="p-5 sm:p-6">
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge variant="outline" className={selected.type === "sprint" ? "border-warning/30 bg-warning/10 text-warning" : "border-signal/30 bg-signal/10 text-signal"}>
@@ -256,13 +256,11 @@ const PredictionHistory = () => {
                     )}
                   </div>
 
-                  <aside className="border-t border-border bg-sidebar/70 p-5 lg:border-l lg:border-t-0">
-                    <p className="label-eyebrow">Notebook actions</p>
-                    <div className="mt-5 grid gap-3">
-                      <div className="border border-border bg-surface-2 p-4">
-                        <p className="label-eyebrow">Last update</p>
-                        <p className="data-mono mt-2 text-sm text-white">{new Date(selected.updatedAt).toLocaleString()}</p>
-                      </div>
+                  <div className="border-t border-border px-5 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="data-mono text-[10px] uppercase text-muted-foreground">
+                        Last update / {new Date(selected.updatedAt).toLocaleString()}
+                      </p>
                       <Button
                         variant="signal"
                         onClick={() => navigate(`/predict/${selected.raceWeekendId}/${selected.type}`)}
@@ -271,7 +269,7 @@ const PredictionHistory = () => {
                         Edit this pick
                       </Button>
                     </div>
-                  </aside>
+                  </div>
                 </div>
               </article>
             )}

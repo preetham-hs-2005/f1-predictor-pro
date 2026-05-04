@@ -1,5 +1,6 @@
 const OPENF1_BASE_URL = "https://api.openf1.org/v1";
-const DEFAULT_CACHE_TTL_MS = 8_000;
+const DEFAULT_CACHE_TTL_MS = 60_000;
+const RATE_LIMIT_COOLDOWN_MS = 120_000;
 
 type CacheEntry<T> = {
   expiresAt: number;
@@ -64,6 +65,24 @@ export async function getConstructors(session_key: number | string) {
 }
 
 const cache = new Map<string, CacheEntry<unknown>>();
+const staleCache = new Map<string, unknown>();
+const inFlight = new Map<string, Promise<unknown>>();
+let rateLimitedUntil = 0;
+
+export class OpenF1RateLimitError extends Error {
+  constructor() {
+    super("OpenF1 is temporarily rate limited. Please try again shortly.");
+    this.name = "OpenF1RateLimitError";
+  }
+}
+
+export function isOpenF1RateLimitError(error: unknown): error is OpenF1RateLimitError {
+  return error instanceof OpenF1RateLimitError || (error instanceof Error && error.name === "OpenF1RateLimitError");
+}
+
+export function isOpenF1CoolingDown() {
+  return Date.now() < rateLimitedUntil;
+}
 
 const COUNTRY_ALIASES: Record<string, string> = {
   australia: "Australia",
@@ -123,17 +142,40 @@ async function getJson<T>(path: string, params: Record<string, string | number |
     return cached.data;
   }
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    if (response.status === 404 || response.status === 400) {
-      return [] as T;
-    }
-    throw new Error(`OpenF1 request failed: ${response.status} ${response.statusText}`);
+  if (Date.now() < rateLimitedUntil) {
+    if (staleCache.has(url)) return staleCache.get(url) as T;
+    throw new OpenF1RateLimitError();
   }
 
-  const data = (await response.json()) as T;
-  cache.set(url, { data, expiresAt: Date.now() + ttl });
-  return data;
+  const pending = inFlight.get(url) as Promise<T> | undefined;
+  if (pending) return pending;
+
+  const request = (async () => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      if (response.status === 404 || response.status === 400) {
+        return [] as T;
+      }
+      if (response.status === 429) {
+        rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+        if (staleCache.has(url)) return staleCache.get(url) as T;
+        throw new OpenF1RateLimitError();
+      }
+      throw new Error(`OpenF1 request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as T;
+    cache.set(url, { data, expiresAt: Date.now() + ttl });
+    staleCache.set(url, data);
+    return data;
+  })();
+
+  inFlight.set(url, request);
+  try {
+    return await request;
+  } finally {
+    inFlight.delete(url);
+  }
 }
 
 export async function getSessions(year?: number, country?: string): Promise<OpenF1Session[]> {

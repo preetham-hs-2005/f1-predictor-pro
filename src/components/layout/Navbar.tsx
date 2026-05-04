@@ -6,11 +6,11 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  MessageCircle,
   Radio,
   Shield,
   Trophy,
   UserCircle,
+  UsersRound,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,9 +32,9 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, code: "DSH" },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy, code: "LDR" },
-  { to: "/results", label: "Results", icon: FlagTriangleRight, code: "RSL" },
+  { to: "/standings", label: "F1 Standings", icon: UsersRound, code: "STD" },
+  { to: "/results", label: "Race Analysis", icon: FlagTriangleRight, code: "ANL" },
   { to: "/predictions", label: "History", icon: History, code: "HST" },
-  { to: "/discussions", label: "Discussions", icon: MessageCircle, code: "COM" },
 ];
 
 const adminNavItem = { to: "/admin", label: "Admin", icon: Shield, code: "ADM" };
@@ -44,8 +44,8 @@ function StatusBar() {
     "RACE CONTROL: ONLINE",
     "PREDICTION FEED: SYNCED",
     "LOCK WINDOWS: ACTIVE",
-    "RESULTS SERVICE: READY",
-    "DISCUSSIONS: LIVE",
+    "RACE ANALYSIS: READY",
+    "F1 GRID: 22 DRIVERS",
   ];
   const stream = [...items, ...items];
 
