@@ -60,7 +60,7 @@ export async function getDrivers(session_key: number | string) {
 }
 
 export async function getConstructors(session_key: number | string) {
-  return getJson<any[]>("/teams", { session_key }, 60_000);
+  return getJson<any[]>("/constructors", { session_key }, 60_000);
 }
 
 const cache = new Map<string, CacheEntry<unknown>>();

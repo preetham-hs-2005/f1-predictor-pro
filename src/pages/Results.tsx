@@ -56,17 +56,15 @@ const Results = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const sessions = await getOpenF1Sessions(raceStart.getUTCFullYear(), race.country || undefined as any);
-        const raceName = String(race.raceName || "").toLowerCase();
+        const sessions = await getOpenF1Sessions(raceStart.getUTCFullYear(), race.country || "");
         const raceSession = Array.isArray(sessions)
-          ? sessions.find((s: any) => `${s.session_name} ${s.session_type}`.toLowerCase().includes("race") && (!raceName || `${s.session_name || ""}`.toLowerCase().includes(raceName.split(" ")[0])))
-            || sessions.find((s: any) => `${s.session_name} ${s.session_type}`.toLowerCase().includes("race"))
+          ? sessions.find((s: any) => `${s.session_name} ${s.session_type}`.toLowerCase().includes("race"))
           : null;
 
         if (!raceSession?.session_key) throw new Error("OpenF1 race session not found for this round.");
 
         const sessionKey = raceSession.session_key;
-        const settled = await Promise.allSettled([
+        const [drivers, constructors, positions, laps, raceControl, pit, stints, teamRadio, weather] = await Promise.all([
           getOpenF1Drivers(sessionKey),
           getOpenF1Constructors(sessionKey),
           getOpenF1Positions(sessionKey),
@@ -77,17 +75,6 @@ const Results = () => {
           getOpenF1TeamRadio(sessionKey),
           getOpenF1Weather(sessionKey),
         ]);
-
-        const pick = (index: number) => (settled[index].status === "fulfilled" ? settled[index].value : []);
-        const drivers = pick(0);
-        const constructors = pick(1);
-        const positions = pick(2);
-        const laps = pick(3);
-        const raceControl = pick(4);
-        const pit = pick(5);
-        const stints = pick(6);
-        const teamRadio = pick(7);
-        const weather = pick(8);
 
         setData({ drivers, constructors, positions, laps, raceControl, pit, stints, teamRadio, weather });
       } catch (e: any) {
