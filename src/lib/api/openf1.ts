@@ -48,3 +48,10 @@ export const getOpenF1Laps = (sessionKey: number | string) =>
 export const getOpenF1CarData = (sessionKey: number | string, driverNumber: number | string) =>
   getData<CarDataSample[]>(`/api/openf1/car-data/${sessionKey}/${driverNumber}`);
 
+export const getOpenF1RaceControl = (sessionKey: number | string) => getData<any[]>(`/api/openf1/race-control/${sessionKey}`);
+export const getOpenF1Stints = (sessionKey: number | string) => getData<any[]>(`/api/openf1/stints/${sessionKey}`);
+export const getOpenF1Pit = (sessionKey: number | string) => getData<any[]>(`/api/openf1/pit/${sessionKey}`);
+export const getOpenF1TeamRadio = (sessionKey: number | string) => getData<any[]>(`/api/openf1/team-radio/${sessionKey}`);
+export const getOpenF1Weather = (sessionKey: number | string) => getData<any[]>(`/api/openf1/weather/${sessionKey}`);
+export const getOpenF1Drivers = (sessionKey: number | string) => getData<any[]>(`/api/openf1/drivers/${sessionKey}`);
+export const getOpenF1Constructors = (sessionKey: number | string) => getData<any[]>(`/api/openf1/constructors/${sessionKey}`);
