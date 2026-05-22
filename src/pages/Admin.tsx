@@ -44,7 +44,7 @@ const Admin = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-32 sm:px-6 lg:px-8">
         <section className="border border-border bg-surface-1">
           <div className="flex flex-col gap-4 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
             <div>

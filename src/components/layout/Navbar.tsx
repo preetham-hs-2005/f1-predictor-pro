@@ -1,6 +1,7 @@
-  import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  CalendarClock,
   FlagTriangleRight,
   History,
   LayoutDashboard,
@@ -70,6 +71,19 @@ function StatusBar() {
   );
 }
 
+function RaceCountdownBar() {
+  return (
+    <div className="fixed left-0 right-0 top-[28px] z-40 border-b border-signal/20 bg-background/95 backdrop-blur lg:left-[240px]">
+      <div className="mx-auto flex max-w-[1600px] items-center gap-3 px-4 py-2 data-mono text-[10px] uppercase text-muted-foreground sm:px-6 lg:px-8">
+        <CalendarClock className="h-3.5 w-3.5 text-signal" />
+        <span className="text-signal">Next Lock Window</span>
+        <span className="h-3 w-px bg-border" />
+        <span className="truncate text-white">Monaco GP - 2d 04h 12m</span>
+      </div>
+    </div>
+  );
+}
+
 const navButtonClass = (active: boolean) =>
   cn(
     "group relative flex items-center gap-3 rounded-sm px-2.5 py-2 text-sm transition-colors",
@@ -114,6 +128,7 @@ const Navbar = () => {
   return (
     <>
       <StatusBar />
+      <RaceCountdownBar />
 
       <aside className="cockpit-sidebar fixed bottom-0 left-0 top-0 z-50 hidden w-[240px] flex-col border-r border-border bg-sidebar lg:flex">
         <div className="border-b border-border p-5">
@@ -168,7 +183,7 @@ const Navbar = () => {
         </div>
       </aside>
 
-      <header className="fixed left-0 right-0 top-[28px] z-50 border-b border-border bg-sidebar/95 px-3 py-3 backdrop-blur lg:hidden">
+      <header className="fixed left-0 right-0 top-[62px] z-50 border-b border-border bg-sidebar/95 px-3 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-3">
           <BrandMark to="/dashboard" compact />
           <Sheet open={open} onOpenChange={setOpen}>

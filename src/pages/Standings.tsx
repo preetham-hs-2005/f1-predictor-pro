@@ -71,7 +71,7 @@ const Standings = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="mx-auto max-w-[1500px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1500px] px-4 pb-12 pt-32 sm:px-6 lg:px-8">
         <section className="panel panel-corners overflow-hidden">
           <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_420px] lg:p-8">
             <div>

@@ -4,9 +4,9 @@ import { AlertTriangle, Loader, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useDrivers } from "@/hooks/useDrivers";
-import { apiClient } from "@/lib/api/client";
+import { apiClient, type ApiResponse } from "@/lib/api/client";
 import { type LeaderboardEntry } from "@/lib/api/leaderboard";
-import { getUserScores, type UserScore } from "@/lib/api/predictions";
+import { getUserScores, type Prediction, type UserScore } from "@/lib/api/predictions";
 import { getAllRaces } from "@/lib/api/races";
 import {
   isPredictionDisqualified,
@@ -28,8 +28,14 @@ const scorePart = (label: string, value?: number) =>
     </span>
   ) : null;
 
+const maskEmail = (email?: string) => {
+  if (!email) return "";
+  const [local = "", domain = ""] = email.split("@");
+  return `${local.slice(0, 2).toUpperCase() || "**"}***@${domain.toUpperCase()}`;
+};
+
 export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogProps) {
-  const [predictions, setPredictions] = useState<any[]>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [scores, setScores] = useState<UserScore[]>([]);
   const [races, setRaces] = useState<RaceWeekend[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,7 +81,7 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
           .map((race) => race.id)
           .join(",");
 
-        const res = await apiClient.get<any>(`/api/predictions/public/${user.userId}?lockedIds=${lockedIds}`);
+        const res = await apiClient.get<ApiResponse<Prediction[]>>(`/api/predictions/public/${user.userId}?lockedIds=${lockedIds}`);
         if (res.success && res.data) {
           setPredictions(res.data);
         } else {
@@ -83,8 +89,8 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
         }
 
         setScores(await getUserScores(user.userId));
-      } catch (err: any) {
-        setError(err.message || "Failed to load predictions");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load predictions");
       } finally {
         setLoading(false);
       }
@@ -99,23 +105,27 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
 
   return (
     <Dialog open={!!user} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex h-[86vh] w-[calc(100vw-2rem)] max-w-6xl flex-col gap-0 overflow-hidden border-border bg-card p-0 sm:rounded-sm">
-        <DialogHeader className="border-b border-border px-5 py-4">
-          <DialogTitle className="display truncate text-2xl font-bold text-white">
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 overflow-hidden border-border bg-card p-0 sm:h-[88vh] sm:w-[calc(100vw-2rem)] sm:max-w-6xl sm:rounded-sm">
+        <DialogHeader className="border-b border-border px-4 py-3 pr-12 sm:px-5 sm:py-4">
+          <DialogTitle className="display truncate text-xl font-bold text-white sm:text-2xl">
             {user?.username || user?.name || "Player"} / prediction trace
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid min-h-0 flex-1 lg:grid-cols-[320px_1fr]">
-          <aside className="border-b border-border bg-sidebar/70 p-5 lg:border-b-0 lg:border-r">
-            <p className="label-eyebrow">Driver profile</p>
-            <div className="mt-5 flex h-20 w-20 items-center justify-center border border-signal bg-signal/10 text-signal">
-              <Trophy className="h-9 w-9" />
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[300px_1fr] lg:overflow-hidden">
+          <aside className="shrink-0 border-b border-border bg-sidebar/70 p-4 lg:border-b-0 lg:border-r lg:p-5">
+            <div className="flex items-start gap-3 lg:block">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-signal bg-signal/10 text-signal lg:mt-5 lg:h-20 lg:w-20">
+                <Trophy className="h-6 w-6 lg:h-9 lg:w-9" />
+              </div>
+              <div className="min-w-0 lg:mt-5">
+                <p className="label-eyebrow">Driver profile</p>
+                <p className="display mt-1 truncate text-2xl font-bold text-white lg:text-3xl">{user?.username || user?.name}</p>
+                <p className="data-mono mt-1 truncate text-[10px] uppercase text-muted-foreground">{maskEmail(user?.email)}</p>
+              </div>
             </div>
-            <p className="display mt-5 truncate text-3xl font-bold text-white">{user?.username || user?.name}</p>
-            <p className="data-mono mt-2 truncate text-[10px] uppercase text-muted-foreground">{user?.email}</p>
 
-            <div className="mt-6 grid grid-cols-2 gap-2">
+            <div className="mt-4 grid grid-cols-3 gap-2 lg:mt-6 lg:grid-cols-2">
               {[
                 ["Rank", user ? `P${user.rank}` : "-"],
                 ["Total", user?.totalPoints ?? 0],
@@ -124,15 +134,15 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
                 ["Winner hits", user?.correctWinners ?? 0],
                 ["Exact pods", user?.exactPodiums ?? 0],
               ].map(([label, value]) => (
-                <div key={label} className="border border-border bg-surface-2 p-3">
+                <div key={label} className="min-w-0 border border-border bg-surface-2 p-2 lg:p-3">
                   <p className="label-eyebrow">{label}</p>
-                  <p className="data-mono mt-2 text-xl font-bold text-white">{value}</p>
+                  <p className="data-mono mt-1 truncate text-lg font-bold text-white lg:mt-2 lg:text-xl">{value}</p>
                 </div>
               ))}
             </div>
           </aside>
 
-          <div className="min-h-0 overflow-y-auto">
+          <div className="min-h-0 lg:overflow-y-auto">
             {loading ? (
               <div className="flex h-full min-h-[360px] items-center justify-center">
                 <Loader className="h-7 w-7 animate-spin text-signal" />
@@ -151,7 +161,7 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
                   const predictionType: PredictionType = prediction.type === "sprint" ? "sprint" : "race";
                   const disqualified = race ? isPredictionDisqualified(race, prediction, predictionType) : false;
                   return (
-                    <article key={`${prediction.raceWeekendId}-${prediction.type}`} className="grid gap-4 px-5 py-5 xl:grid-cols-[1fr_1.35fr_150px] xl:items-start">
+                    <article key={`${prediction.raceWeekendId}-${prediction.type}`} className="grid gap-4 px-4 py-4 sm:px-5 xl:grid-cols-[minmax(180px,1fr)_1.35fr_140px] xl:items-start">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant="outline" className={cn(prediction.type === "sprint" ? "border-warning/30 bg-warning/10 text-warning" : "border-signal/30 bg-signal/10 text-signal")}>
@@ -164,7 +174,7 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
                             </Badge>
                           )}
                         </div>
-                        <p className="display mt-3 truncate text-2xl font-bold text-white">{race?.raceName || prediction.raceWeekendId}</p>
+                        <p className="display mt-3 truncate text-xl font-bold text-white sm:text-2xl">{race?.raceName || prediction.raceWeekendId}</p>
                         <p className="data-mono mt-1 truncate text-[10px] uppercase text-muted-foreground">
                           {race ? `R${race.round} / ${race.circuitName}` : prediction.raceWeekendId}
                         </p>
@@ -178,7 +188,7 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
                             ["P2", prediction.predictedP2, score?.p2Points],
                             ["P3", prediction.predictedP3, score?.p3Points],
                           ].map(([label, driver, points]) => (
-                            <div key={label as string} className="mt-2 flex items-center justify-between gap-3 data-mono text-sm">
+                            <div key={label as string} className="mt-2 grid grid-cols-[32px_minmax(0,1fr)] items-center gap-3 data-mono text-sm">
                               <span className="text-muted-foreground">{label}</span>
                               <span className={cn("truncate text-right font-semibold text-white", Number(points) > 0 && "text-signal")}>{getDriverName(driver as string)}</span>
                             </div>
@@ -186,11 +196,11 @@ export function UserPredictionsDialog({ user, onClose }: UserPredictionsDialogPr
                         </div>
                         <div className="border border-border bg-surface-2/50 p-3">
                           <p className="label-eyebrow">Bonus board</p>
-                          <div className="mt-2 flex items-center justify-between gap-3 data-mono text-sm">
+                          <div className="mt-2 grid grid-cols-[80px_minmax(0,1fr)] items-center gap-3 data-mono text-sm">
                             <span className="text-muted-foreground">Pole</span>
                             <span className={cn("truncate text-right font-semibold text-white", score?.polePoints && "text-signal")}>{getDriverName(prediction.predictedPole)}</span>
                           </div>
-                          <div className="mt-2 flex items-center justify-between gap-3 data-mono text-sm">
+                          <div className="mt-2 grid grid-cols-[80px_minmax(0,1fr)] items-center gap-3 data-mono text-sm">
                             <span className="text-muted-foreground">Constructor</span>
                             <span className={cn("truncate text-right font-semibold text-white", score?.constructorPoints && "text-signal")}>{prediction.predictedConstructor || "-"}</span>
                           </div>

@@ -94,7 +94,7 @@ const PredictionHistory = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-32 sm:px-6 lg:px-8">
         <section className="panel panel-corners overflow-hidden">
           <div className="relative p-5 sm:p-7 lg:p-8">
             <div className="checker absolute right-0 top-0 h-72 w-72 opacity-[0.05]" />

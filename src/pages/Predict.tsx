@@ -86,7 +86,7 @@ const Predict = () => {
     return (
       <PageShell>
         <Navbar />
-        <main className="mx-auto max-w-[1100px] px-4 pt-24 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-[1100px] px-4 pt-32 sm:px-6 lg:px-8">
           <section className="section-card text-center">
             <p className="display text-2xl font-semibold text-white">{raceError || "Race not found"}</p>
           </section>
@@ -102,7 +102,7 @@ const Predict = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-32 sm:px-6 lg:px-8">
         <PageHeader
           eyebrow={`Round ${race.round}`}
           title={race.raceName}
@@ -118,10 +118,10 @@ const Predict = () => {
 
         <section className="mt-8">
           {race.sprintWeekend && (
-            <div className="mb-6 flex flex-wrap gap-3">
+            <div className="mb-6 grid gap-3 sm:flex sm:flex-wrap">
               <button
                 onClick={() => navigate(`/predict/${raceId}/sprint`)}
-                className={`data-mono rounded-sm border px-5 py-3 text-sm font-semibold uppercase transition-colors ${
+                className={`data-mono min-w-0 rounded-sm border px-5 py-3 text-sm font-semibold uppercase transition-colors ${
                   isSprint
                     ? "border-warning/30 bg-warning/10 text-warning"
                     : "border-border bg-surface-2 text-white/60 hover:text-white"
@@ -132,7 +132,7 @@ const Predict = () => {
               </button>
               <button
                 onClick={() => navigate(`/predict/${raceId}/race`)}
-                className={`data-mono rounded-sm border px-5 py-3 text-sm font-semibold uppercase transition-colors ${
+                className={`data-mono min-w-0 rounded-sm border px-5 py-3 text-sm font-semibold uppercase transition-colors ${
                   !isSprint
                     ? "border-signal/30 bg-signal/10 text-signal"
                     : "border-border bg-surface-2 text-white/60 hover:text-white"
@@ -143,7 +143,7 @@ const Predict = () => {
             </div>
           )}
 
-          <div className="mb-8 flex flex-wrap items-center gap-3">
+          <div className="mb-8 flex min-w-0 flex-wrap items-center gap-3">
             {isSprint && (
               <Badge variant="outline" className="data-mono rounded-sm border-warning/30 bg-warning/10 px-3 py-1 text-xs font-semibold uppercase text-warning">
                 <Zap className="mr-1.5 h-3.5 w-3.5" />

@@ -141,8 +141,8 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
             const value = picks[slot.key];
             const selected = [p1, p2, p3].filter(Boolean);
             return (
-              <div key={slot.key} className={cn("grid gap-3 px-4 py-4 md:grid-cols-12 md:items-center", index === 0 && "bg-signal/5")}>
-                <div className="flex items-center gap-3 md:col-span-2">
+              <div key={slot.key} className={cn("grid min-w-0 gap-3 px-3 py-4 sm:px-4 md:grid-cols-12 md:items-center", index === 0 && "bg-signal/5")}>
+                <div className="flex min-w-0 items-center gap-3 md:col-span-2">
                   <span className="data-mono text-3xl font-bold text-white">{slot.label}</span>
                   <span className="data-mono text-[10px] text-signal">+{slot.points * pointMultiplier} PTS</span>
                 </div>
@@ -150,7 +150,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
                   <div className="display truncate text-base font-semibold text-white">{value ? driverName(value) : "Empty slot"}</div>
                   <div className="data-mono mt-1 truncate text-[10px] uppercase text-muted-foreground">{value ? driverMeta(value) : "SELECT FROM DRIVER LIST"}</div>
                 </div>
-                <div className="md:col-span-5">
+                <div className="min-w-0 md:col-span-5">
                   <Select
                     value={value}
                     onValueChange={slot.key === "p1" ? setP1 : slot.key === "p2" ? setP2 : setP3}
@@ -178,7 +178,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
           })}
         </div>
 
-        <div className="border-t border-border bg-surface-2/35 p-4">
+        <div className="border-t border-border bg-surface-2/35 p-3 sm:p-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label className="label-eyebrow mb-2 block">{isSprint ? "Sprint pole" : "Pole position"} / +{10 * pointMultiplier} pts</Label>
@@ -269,7 +269,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
           </div>
         )}
 
-        <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full" size="lg" variant="signal">
+        <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full text-xs sm:text-sm" size="lg" variant="signal">
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Lock className="h-4 w-4" />
           {locked ? "Predictions locked" : loading ? "Submitting..." : `Submit ${isSprint ? "sprint" : "race"} prediction`}

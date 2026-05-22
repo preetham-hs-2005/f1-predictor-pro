@@ -1,4 +1,5 @@
 import "dotenv/config";
+import dns from "dns";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -7,6 +8,24 @@ import dotenv from "dotenv";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env.local") });
+
+const configureDns = () => {
+  const configuredServers = process.env.DNS_SERVERS?.split(",")
+    .map((server) => server.trim())
+    .filter(Boolean);
+  const currentServers = dns.getServers();
+
+  if (configuredServers?.length) {
+    dns.setServers(configuredServers);
+    return;
+  }
+
+  if (currentServers.length === 0 || currentServers.every((server) => server === "127.0.0.1" || server === "::1")) {
+    dns.setServers(["1.1.1.1", "8.8.8.8"]);
+  }
+};
+
+configureDns();
 
 import express from "express";
 import cors from "cors";

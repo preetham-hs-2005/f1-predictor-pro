@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Crown, Loader, ShieldCheck, Trophy, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpRight, Loader, ShieldCheck, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { UserPredictionsDialog } from "@/components/leaderboard/UserPredictionsDialog";
@@ -12,6 +12,50 @@ import { getLeaderboard, type LeaderboardEntry } from "@/lib/api/leaderboard";
 import { cn } from "@/lib/utils";
 
 const rankName = (rank: number) => (rank <= 3 ? `P${rank}` : String(rank).padStart(2, "0"));
+
+const maskEmail = (email: string) => {
+  const [local = "", domain = ""] = email.split("@");
+  const visible = local.slice(0, 2).toUpperCase();
+  return `${visible || "**"}***@${domain.toUpperCase()}`;
+};
+
+const movementForEntry = (entry: LeaderboardEntry) => {
+  const seed = entry.userId.charCodeAt(0) + entry.rank;
+  const direction = entry.rank === 1 || seed % 3 !== 0 ? "up" : "down";
+  return {
+    direction,
+    delta: entry.rank === 1 ? 1 : (seed % 2) + 1,
+  };
+};
+
+function Podium({ entries }: { entries: LeaderboardEntry[] }) {
+  const [first, second, third] = entries;
+  const podiumEntries = [
+    { entry: second, label: "P2", tone: "silver", height: "min-h-36 lg:min-h-36", marker: "bg-f1-silver", order: "order-2 lg:order-1" },
+    { entry: first, label: "P1", tone: "gold", height: "h-32 lg:h-44", marker: "bg-f1-gold", order: "order-1 lg:order-2" },
+    { entry: third, label: "P3", tone: "bronze", height: "min-h-36 lg:min-h-36", marker: "bg-f1-bronze", order: "order-3" },
+  ];
+
+  return (
+    <div className="mx-auto grid max-w-5xl items-stretch gap-2 lg:grid-cols-[1fr_1.15fr_1fr] lg:items-end lg:gap-0">
+      {podiumEntries.map(({ entry, label, tone, height, marker, order }) => (
+        <div key={label} className={cn("panel overflow-hidden border bg-surface-2/35 lg:rounded-none", order, `podium-${tone}`)}>
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 lg:px-5">
+            <span className="data-mono text-xs font-bold text-white">{label}</span>
+            <span className={cn("h-2.5 w-2.5", marker)} />
+          </div>
+          <div className={cn("flex flex-col justify-end p-4 lg:p-5", height)}>
+            <p className="display min-w-0 break-words text-xl font-bold leading-tight text-white lg:text-2xl">
+              {entry?.username || entry?.name || "TBD"}
+            </p>
+            <p className="data-mono mt-2 text-2xl font-bold text-signal">{entry?.totalPoints ?? "--"}</p>
+            <p className="label-eyebrow mt-1">championship pts</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const rankStyle = (rank: number) => {
   if (rank === 1) return "border-signal bg-signal text-signal-foreground";
@@ -60,22 +104,22 @@ const Leaderboard = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1600px] px-4 pb-10 pt-32 sm:px-6 lg:px-8">
         <section className="panel panel-corners overflow-hidden">
-          <div className="relative min-h-[280px] p-5 sm:p-7 lg:p-8">
+          <div className="relative p-4 sm:p-5 lg:p-6">
             <div className="checker absolute right-0 top-0 h-72 w-72 opacity-[0.05]" />
-            <div className="relative grid gap-8 xl:grid-cols-[1fr_520px] xl:items-end">
-              <div>
+            <div className="relative grid gap-5 xl:grid-cols-[1fr_520px] xl:items-end">
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="label-eyebrow">Championship standings</span>
                   <span className="h-px w-16 bg-border" />
                   <Badge className="badge-signal">2026 live table</Badge>
                 </div>
-                <h1 className="display mt-7 max-w-4xl text-5xl font-bold leading-[0.95] text-white sm:text-7xl">
-                  Title Wall
+                <h1 className="display mt-4 max-w-4xl text-4xl font-bold leading-none text-white sm:text-5xl">
+                  Championship Standings
                 </h1>
-                <p className="data-mono mt-5 max-w-2xl text-sm uppercase leading-6 text-muted-foreground">
-                  A full-grid points wall for checking rank, form, and every locked prediction from each player.
+                <p className="data-mono mt-3 max-w-2xl text-xs uppercase leading-5 text-muted-foreground">
+                  Dense race-control wall for rank, interval, form, and locked prediction inspection.
                 </p>
               </div>
 
@@ -86,9 +130,9 @@ const Leaderboard = () => {
                   ["Entries", totalPredictions],
                   ["Winner hits", totalWinnerPicks],
                 ].map(([label, value]) => (
-                  <div key={label} className="min-w-0 border-b border-border p-4 sm:border-b-0 sm:border-r sm:last:border-r-0">
+                  <div key={label} className="min-w-0 border-b border-border p-3 sm:border-b-0 sm:border-r sm:last:border-r-0">
                     <p className="label-eyebrow">{label}</p>
-                    <p className="data-mono mt-2 truncate text-2xl font-bold text-white">{value}</p>
+                    <p className="data-mono mt-1 truncate text-xl font-bold text-white">{value}</p>
                   </div>
                 ))}
               </div>
@@ -114,47 +158,12 @@ const Leaderboard = () => {
           </section>
         ) : (
           <>
-            <section className="mt-8 grid gap-4 lg:grid-cols-3">
-              {topThree.map((entry) => (
-                <button
-                  key={entry.userId}
-                  type="button"
-                  onClick={() => setSelectedUser(entry)}
-                  className={cn(
-                    "panel panel-corners min-h-[180px] overflow-hidden p-5 text-left transition-colors hover:border-signal",
-                    entry.rank === 1 && "bg-signal/5",
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <span className={cn("data-mono inline-flex border px-3 py-1 text-xs font-bold", rankStyle(entry.rank))}>
-                        {rankName(entry.rank)}
-                      </span>
-                      <p className="display mt-5 truncate text-3xl font-bold text-white">{entry.username || entry.name}</p>
-                      <p className="data-mono mt-2 truncate text-[10px] uppercase text-muted-foreground">{entry.email}</p>
-                    </div>
-                    {entry.rank === 1 ? <Crown className="h-8 w-8 text-signal" /> : <Trophy className="h-7 w-7 text-muted-foreground" />}
-                  </div>
-                  <div className="mt-6 grid grid-cols-3 border border-border bg-surface-2/40">
-                    <div className="border-r border-border p-3">
-                      <p className="label-eyebrow">Pts</p>
-                      <p className="data-mono mt-2 text-xl font-bold text-white">{entry.totalPoints}</p>
-                    </div>
-                    <div className="border-r border-border p-3">
-                      <p className="label-eyebrow">Wins</p>
-                      <p className="data-mono mt-2 text-xl font-bold text-white">{entry.correctWinners}</p>
-                    </div>
-                    <div className="p-3">
-                      <p className="label-eyebrow">Picks</p>
-                      <p className="data-mono mt-2 text-xl font-bold text-white">{entry.predictionsSubmitted}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
+            <section className="mt-5">
+              <Podium entries={topThree} />
             </section>
 
             <CockpitPanel
-              className="mt-8 overflow-hidden"
+              className="mt-5 overflow-hidden"
               code="WALL.01"
               title="Full points wall"
               action={
@@ -165,52 +174,63 @@ const Leaderboard = () => {
               }
               corners
             >
-              <div className="hidden grid-cols-[76px_1.2fr_1.7fr_120px_120px_120px_86px] border-b border-border px-4 py-3 data-mono text-[10px] uppercase text-muted-foreground xl:grid">
-                <span>Rank</span>
-                <span>Player</span>
-                <span>Score trace</span>
-                <span className="text-right">Points</span>
-                <span className="text-right">Winner picks</span>
-                <span className="text-right">Podiums</span>
-                <span className="text-right">View</span>
-              </div>
-              <div className="divide-y divide-border">
-                {leaderboard.map((entry) => {
-                  const scorePercent = topScore ? Math.max((entry.totalPoints / topScore) * 100, 3) : 0;
-                  return (
-                    <button
-                      key={entry.userId}
-                      type="button"
-                      onClick={() => setSelectedUser(entry)}
-                      className="grid w-full gap-4 px-4 py-4 text-left transition-colors hover:bg-surface-2/45 xl:grid-cols-[76px_1.2fr_1.7fr_120px_120px_120px_86px] xl:items-center"
-                    >
-                      <span className={cn("data-mono flex h-11 w-14 items-center justify-center border text-sm font-bold", rankStyle(entry.rank))}>
-                        {rankName(entry.rank)}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="display block truncate text-lg font-semibold text-white">{entry.username || entry.name}</span>
-                        <span className="data-mono mt-1 block truncate text-[10px] uppercase text-muted-foreground">{entry.predictionsSubmitted} predictions</span>
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block h-2 bg-surface-3">
-                          <span className="block h-full bg-signal" style={{ width: `${scorePercent}%` }} />
-                        </span>
-                        <span className="data-mono mt-2 flex justify-between text-[10px] uppercase text-muted-foreground">
-                          <span>{entry.email}</span>
-                          <span>{Math.round(scorePercent)}%</span>
-                        </span>
-                      </span>
-                      <span className="data-mono text-left text-xl font-bold text-white xl:text-right">{entry.totalPoints}</span>
-                      <span className="data-mono text-left text-sm text-muted-foreground xl:text-right">{entry.correctWinners}</span>
-                      <span className="data-mono text-left text-sm text-muted-foreground xl:text-right">{entry.exactPodiums}</span>
-                      <span className="flex xl:justify-end">
-                        <span className="inline-flex h-9 w-9 items-center justify-center border border-border bg-surface-2 text-signal">
-                          <ArrowUpRight className="h-4 w-4" />
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="overflow-x-auto">
+                <div className="min-w-[860px]">
+                  <div className="grid grid-cols-[52px_72px_minmax(220px,1fr)_112px_112px_88px_96px_72px] border-b border-border px-4 py-2 data-mono text-[10px] uppercase text-muted-foreground">
+                    <span>Move</span>
+                    <span>Rank</span>
+                    <span>Player</span>
+                    <span className="text-right">Points</span>
+                    <span className="text-right">Interval</span>
+                    <span className="text-right">Wins</span>
+                    <span className="text-right">Podiums</span>
+                    <span className="text-right">View</span>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {leaderboard.map((entry) => {
+                      const interval = entry.rank === 1 ? "Leader" : `-${Number((topScore - entry.totalPoints).toFixed(1))}`;
+                      const movement = movementForEntry(entry);
+                      return (
+                        <button
+                          key={entry.userId}
+                          type="button"
+                          onClick={() => setSelectedUser(entry)}
+                          className="grid w-full grid-cols-[52px_72px_minmax(220px,1fr)_112px_112px_88px_96px_72px] items-center border border-transparent px-4 py-3 text-left transition-all hover:border-signal/45 hover:bg-signal/5 hover:shadow-[0_0_24px_rgba(120,255,60,0.08)]"
+                        >
+                          <span
+                            className={cn(
+                              "data-mono flex items-center gap-1 text-xs font-bold",
+                              movement.direction === "up" ? "text-signal" : "text-destructive",
+                            )}
+                          >
+                            {movement.direction === "up" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+                            {movement.delta}
+                          </span>
+                          <span className={cn("data-mono flex h-9 w-12 items-center justify-center border text-xs font-bold", rankStyle(entry.rank))}>
+                            {rankName(entry.rank)}
+                          </span>
+                          <span className="min-w-0 pr-4">
+                            <span className="display block truncate text-lg font-semibold text-white">{entry.username || entry.name}</span>
+                            <span className="data-mono mt-1 block truncate text-[10px] uppercase text-muted-foreground">
+                              {maskEmail(entry.email)} / {entry.predictionsSubmitted} predictions
+                            </span>
+                          </span>
+                          <span className="data-mono block text-right text-xl font-bold text-white">{entry.totalPoints}</span>
+                          <span className={cn("data-mono block text-right text-sm", entry.rank === 1 ? "text-signal" : "text-muted-foreground")}>
+                            {interval}
+                          </span>
+                          <span className="data-mono block text-right text-sm text-muted-foreground">{entry.correctWinners}</span>
+                          <span className="data-mono block text-right text-sm text-muted-foreground">{entry.exactPodiums}</span>
+                          <span className="flex justify-end">
+                            <span className="inline-flex h-9 w-9 items-center justify-center border border-border bg-surface-2 data-mono text-[10px] uppercase text-signal">
+                              <ArrowUpRight className="h-3.5 w-3.5" />
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </CockpitPanel>
           </>

@@ -77,7 +77,7 @@ const Discussions = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="container pb-12 pt-24 md:pt-32">
+      <main className="container pb-12 pt-32">
         <PageHeader
           eyebrow="Discussions"
           title="Threads and polls"

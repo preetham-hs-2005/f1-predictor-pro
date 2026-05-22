@@ -116,7 +116,7 @@ const Dashboard = () => {
   return (
     <PageShell>
       <Navbar />
-      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-24 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1600px] px-4 pb-12 pt-32 sm:px-6 lg:px-8">
         {error ? (
           <section className="section-card border border-destructive/20 bg-destructive/10">
             <p className="display text-xl font-semibold text-destructive">Unable to load calendar</p>
