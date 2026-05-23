@@ -12,10 +12,12 @@ export interface F1Driver {
 export interface F1Team {
   id: string;
   name: string;
+  aliases?: string[];
   chassisName: string;
   base: string;
   powerUnit: string;
   teamColor: string;
+  logoPath: string;
   drivers: string[];
 }
 
@@ -27,6 +29,7 @@ export const f1Teams: F1Team[] = [
     base: "Woking, United Kingdom",
     powerUnit: "Mercedes",
     teamColor: "#FF8700",
+    logoPath: "/team-logos/mclaren.webp",
     drivers: ["Lando Norris", "Oscar Piastri"],
   },
   {
@@ -36,6 +39,7 @@ export const f1Teams: F1Team[] = [
     base: "Brackley, United Kingdom",
     powerUnit: "Mercedes",
     teamColor: "#00D2BE",
+    logoPath: "/team-logos/mercedes.webp",
     drivers: ["George Russell", "Kimi Antonelli"],
   },
   {
@@ -45,6 +49,7 @@ export const f1Teams: F1Team[] = [
     base: "Milton Keynes, United Kingdom",
     powerUnit: "Red Bull Ford",
     teamColor: "#3671C6",
+    logoPath: "/team-logos/red-bull.webp",
     drivers: ["Max Verstappen", "Isack Hadjar"],
   },
   {
@@ -54,6 +59,7 @@ export const f1Teams: F1Team[] = [
     base: "Maranello, Italy",
     powerUnit: "Ferrari",
     teamColor: "#E80020",
+    logoPath: "/team-logos/ferrari.webp",
     drivers: ["Charles Leclerc", "Lewis Hamilton"],
   },
   {
@@ -63,7 +69,8 @@ export const f1Teams: F1Team[] = [
     base: "Grove, United Kingdom",
     powerUnit: "Mercedes",
     teamColor: "#64C4FF",
-    drivers: ["Alex Albon", "Carlos Sainz"],
+    logoPath: "/team-logos/williams.webp",
+    drivers: ["Alexander Albon", "Carlos Sainz"],
   },
   {
     id: "racing-bulls",
@@ -72,6 +79,7 @@ export const f1Teams: F1Team[] = [
     base: "Faenza, Italy",
     powerUnit: "Honda RBPT",
     teamColor: "#6692FF",
+    logoPath: "/team-logos/racing-bulls.webp",
     drivers: ["Liam Lawson", "Arvid Lindblad"],
   },
   {
@@ -81,15 +89,18 @@ export const f1Teams: F1Team[] = [
     base: "Silverstone, United Kingdom",
     powerUnit: "Honda",
     teamColor: "#229971",
+    logoPath: "/team-logos/aston-martin.webp",
     drivers: ["Fernando Alonso", "Lance Stroll"],
   },
   {
     id: "haas",
     name: "Haas F1 Team",
+    aliases: ["Haas"],
     chassisName: "Haas",
     base: "Kannapolis, United States",
     powerUnit: "Ferrari",
     teamColor: "#B6BABD",
+    logoPath: "/team-logos/haas.webp",
     drivers: ["Esteban Ocon", "Oliver Bearman"],
   },
   {
@@ -99,6 +110,7 @@ export const f1Teams: F1Team[] = [
     base: "Hinwil, Switzerland",
     powerUnit: "Audi",
     teamColor: "#52E252",
+    logoPath: "/team-logos/audi.webp",
     drivers: ["Nico Hulkenberg", "Gabriel Bortoleto"],
   },
   {
@@ -107,7 +119,8 @@ export const f1Teams: F1Team[] = [
     chassisName: "Alpine",
     base: "Enstone, United Kingdom",
     powerUnit: "Renault",
-    teamColor: "#0090FF",
+    teamColor: "#FFC0CB",
+    logoPath: "/team-logos/alpine.webp",
     drivers: ["Pierre Gasly", "Franco Colapinto"],
   },
   {
@@ -117,20 +130,21 @@ export const f1Teams: F1Team[] = [
     base: "Fishers, United States",
     powerUnit: "Ferrari",
     teamColor: "#C7A461",
+    logoPath: "/team-logos/cadillac.webp",
     drivers: ["Valtteri Bottas", "Sergio Perez"],
   },
 ];
 
 export const f1Drivers: F1Driver[] = [
-  { id: "nor", name: "Lando Norris", shortName: "NOR", number: 4, team: "McLaren", country: "Great Britain", countryCode: "GBR", teamColor: "#FF8700" },
+  { id: "nor", name: "Lando Norris", shortName: "NOR", number: 1, team: "McLaren", country: "Great Britain", countryCode: "GBR", teamColor: "#FF8700" },
   { id: "pia", name: "Oscar Piastri", shortName: "PIA", number: 81, team: "McLaren", country: "Australia", countryCode: "AUS", teamColor: "#FF8700" },
   { id: "rus", name: "George Russell", shortName: "RUS", number: 63, team: "Mercedes", country: "Great Britain", countryCode: "GBR", teamColor: "#00D2BE" },
   { id: "ant", name: "Kimi Antonelli", shortName: "ANT", number: 12, team: "Mercedes", country: "Italy", countryCode: "ITA", teamColor: "#00D2BE" },
-  { id: "ver", name: "Max Verstappen", shortName: "VER", number: 1, team: "Red Bull Racing", country: "Netherlands", countryCode: "NED", teamColor: "#3671C6" },
+  { id: "ver", name: "Max Verstappen", shortName: "VER", number: 3, team: "Red Bull Racing", country: "Netherlands", countryCode: "NED", teamColor: "#3671C6" },
   { id: "had", name: "Isack Hadjar", shortName: "HAD", number: 21, team: "Red Bull Racing", country: "France", countryCode: "FRA", teamColor: "#3671C6" },
   { id: "lec", name: "Charles Leclerc", shortName: "LEC", number: 16, team: "Ferrari", country: "Monaco", countryCode: "MON", teamColor: "#E80020" },
   { id: "ham", name: "Lewis Hamilton", shortName: "HAM", number: 44, team: "Ferrari", country: "Great Britain", countryCode: "GBR", teamColor: "#E80020" },
-  { id: "alb", name: "Alex Albon", shortName: "ALB", number: 23, team: "Williams", country: "Thailand", countryCode: "THA", teamColor: "#64C4FF" },
+  { id: "alb", name: "Alexander Albon", shortName: "ALB", number: 23, team: "Williams", country: "Thailand", countryCode: "THA", teamColor: "#64C4FF" },
   { id: "sai", name: "Carlos Sainz", shortName: "SAI", number: 55, team: "Williams", country: "Spain", countryCode: "ESP", teamColor: "#64C4FF" },
   { id: "law", name: "Liam Lawson", shortName: "LAW", number: 30, team: "Racing Bulls", country: "New Zealand", countryCode: "NZL", teamColor: "#6692FF" },
   { id: "lin", name: "Arvid Lindblad", shortName: "LIN", number: 41, team: "Racing Bulls", country: "Great Britain", countryCode: "GBR", teamColor: "#6692FF" },
@@ -140,8 +154,8 @@ export const f1Drivers: F1Driver[] = [
   { id: "bea", name: "Oliver Bearman", shortName: "BEA", number: 87, team: "Haas F1 Team", country: "Great Britain", countryCode: "GBR", teamColor: "#B6BABD" },
   { id: "hul", name: "Nico Hulkenberg", shortName: "HUL", number: 27, team: "Audi", country: "Germany", countryCode: "GER", teamColor: "#52E252" },
   { id: "bor", name: "Gabriel Bortoleto", shortName: "BOR", number: 5, team: "Audi", country: "Brazil", countryCode: "BRA", teamColor: "#52E252" },
-  { id: "gas", name: "Pierre Gasly", shortName: "GAS", number: 10, team: "Alpine", country: "France", countryCode: "FRA", teamColor: "#0090FF" },
-  { id: "col", name: "Franco Colapinto", shortName: "COL", number: 43, team: "Alpine", country: "Argentina", countryCode: "ARG", teamColor: "#0090FF" },
+  { id: "gas", name: "Pierre Gasly", shortName: "GAS", number: 10, team: "Alpine", country: "France", countryCode: "FRA", teamColor: "#FFC0CB" },
+  { id: "col", name: "Franco Colapinto", shortName: "COL", number: 43, team: "Alpine", country: "Argentina", countryCode: "ARG", teamColor: "#FFC0CB" },
   { id: "bot", name: "Valtteri Bottas", shortName: "BOT", number: 77, team: "Cadillac", country: "Finland", countryCode: "FIN", teamColor: "#C7A461" },
   { id: "per", name: "Sergio Perez", shortName: "PER", number: 11, team: "Cadillac", country: "Mexico", countryCode: "MEX", teamColor: "#C7A461" },
 ];

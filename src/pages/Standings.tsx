@@ -9,7 +9,8 @@ import { getF1Standings, type F1DriverStanding, type F1TeamStanding } from "@/li
 import { f1Drivers, f1Teams } from "@/lib/data/f1Grid";
 import { cn } from "@/lib/utils";
 
-const teamColorByName = new Map(f1Teams.map((team) => [team.name, team.teamColor]));
+const teamMetaByName = new Map(f1Teams.flatMap((team) => [team.name, ...(team.aliases || [])].map((name) => [name, team])));
+const teamColorByName = new Map(f1Teams.flatMap((team) => [team.name, ...(team.aliases || [])].map((name) => [name, team.teamColor])));
 const driverNumberByName = new Map(f1Drivers.map((driver) => [driver.name, driver.number]));
 
 const fallbackDrivers: F1DriverStanding[] = f1Drivers.map((driver, index) => ({
@@ -183,18 +184,35 @@ const Standings = () => {
           <TabsContent value="constructors" className="mt-6">
             <section className="space-y-2">
               {teams.map((team) => {
-                const teamMeta = f1Teams.find((item) => item.name === team.team);
+                const teamMeta = teamMetaByName.get(team.team);
                 const drivers = teamMeta?.drivers || [];
+                const teamColor = teamMeta?.teamColor || "#9CA3AF";
 
                 return (
                   <article
                     key={team.team}
-                    className="group relative flex items-center gap-5 overflow-hidden border border-border bg-surface-1 px-5 py-4 transition-colors duration-200 hover:bg-surface-2/60 sm:gap-7 sm:px-6 sm:py-5"
+                    className="group relative flex items-center gap-4 overflow-hidden border border-border bg-surface-1 px-4 py-4 transition-colors duration-200 hover:bg-surface-2/60 sm:gap-6 sm:px-6 sm:py-5"
                   >
+                    <span className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: teamColor }} />
 
                     {/* Position */}
                     <div className="data-mono flex h-10 w-10 shrink-0 items-center justify-center border border-border bg-surface-2 text-base font-bold text-white">
                       {team.position}
+                    </div>
+
+                    <div className="flex h-14 w-20 shrink-0 items-center justify-center border border-border bg-background/45 p-2 sm:w-28">
+                      {teamMeta?.logoPath ? (
+                        <img
+                          src={teamMeta.logoPath}
+                          alt={`${team.team} logo`}
+                          className="h-full w-full object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span className="data-mono text-xs font-bold text-muted-foreground">
+                          {team.team.slice(0, 3).toUpperCase()}
+                        </span>
+                      )}
                     </div>
 
                     {/* Team name + drivers */}

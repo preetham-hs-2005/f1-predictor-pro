@@ -59,12 +59,18 @@ export class Driver {
   ): Promise<DriverDocument | null> {
     const db = getDB();
     const collection = db.collection<DriverDocument>("drivers");
+    const {
+      _id,
+      id: driverId,
+      createdAt,
+      ...safeUpdates
+    } = updates as Partial<DriverDocument>;
 
     const result = await collection.findOneAndUpdate(
       { id },
       {
         $set: {
-          ...updates,
+          ...safeUpdates,
           updatedAt: new Date(),
         },
       },
@@ -93,7 +99,7 @@ export class Driver {
     console.log("[SEED] Seeding 2026 F1 Drivers...");
 
     const initialDrivers: Omit<DriverDocument, "_id" | "createdAt" | "updatedAt">[] = [
-      { id: "nor", name: "Lando Norris", team: "McLaren", number: 4, country: "Great Britain", countryFlag: "🇬🇧", teamColor: "#FF8000", isActive: true },
+      { id: "nor", name: "Lando Norris", team: "McLaren", number: 1, country: "Great Britain", countryFlag: "🇬🇧", teamColor: "#FF8000", isActive: true },
       { id: "pia", name: "Oscar Piastri", team: "McLaren", number: 81, country: "Australia", countryFlag: "🇦🇺", teamColor: "#FF8000", isActive: true },
       
       { id: "rus", name: "George Russell", team: "Mercedes", number: 63, country: "Great Britain", countryFlag: "🇬🇧", teamColor: "#C0C0C0", isActive: true },
@@ -102,7 +108,7 @@ export class Driver {
       { id: "lec", name: "Charles Leclerc", team: "Ferrari", number: 16, country: "Monaco", countryFlag: "🇲🇨", teamColor: "#FF0000", isActive: true },
       { id: "ham", name: "Lewis Hamilton", team: "Ferrari", number: 44, country: "Great Britain", countryFlag: "🇬🇧", teamColor: "#FF0000", isActive: true },
       
-      { id: "ver", name: "Max Verstappen", team: "Red Bull Racing", number: 1, country: "Netherlands", countryFlag: "🇳🇱", teamColor: "#00008B", isActive: true },
+      { id: "ver", name: "Max Verstappen", team: "Red Bull Racing", number: 3, country: "Netherlands", countryFlag: "🇳🇱", teamColor: "#00008B", isActive: true },
       { id: "had", name: "Isack Hadjar", team: "Red Bull Racing", number: 21, country: "France", countryFlag: "🇫🇷", teamColor: "#00008B", isActive: true },
       
       { id: "alo", name: "Fernando Alonso", team: "Aston Martin", number: 14, country: "Spain", countryFlag: "🇪🇸", teamColor: "#004225", isActive: true },

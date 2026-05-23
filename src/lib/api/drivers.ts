@@ -12,6 +12,8 @@ export interface Driver {
   isActive: boolean;
 }
 
+type DriverUpdate = Partial<Omit<Driver, "_id" | "id">>;
+
 export const driversApi = {
   getAll: async (all: boolean = false) => {
     const response = await apiClient.get<{ success: boolean; data: Driver[] }>(
@@ -29,9 +31,10 @@ export const driversApi = {
   },
 
   update: async (id: string, updates: Partial<Driver>) => {
+    const { _id, id: driverId, ...safeUpdates } = updates;
     const response = await apiClient.patch<{ success: boolean; data: Driver }>(
       `/api/drivers/${id}`,
-      updates
+      safeUpdates as DriverUpdate
     );
     return response;
   },

@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Loader2, Lock, Trophy } from "lucide-react";
+import { Check, CheckCircle2, ChevronsUpDown, Loader2, Lock, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 import { CockpitPanel } from "@/components/layout/CockpitPanel";
 import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDrivers } from "@/hooks/useDrivers";
+import { type Driver } from "@/lib/api/drivers";
 import { getUserPrediction, submitPrediction } from "@/lib/api/predictions";
 import { type RaceWeekend } from "@/lib/data/raceCalendar";
 import { cn } from "@/lib/utils";
@@ -25,6 +28,69 @@ const slots = [
   { key: "p2", label: "P2", points: 20 },
   { key: "p3", label: "P3", points: 15 },
 ] as const;
+
+interface DriverComboboxProps {
+  drivers: Driver[];
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+}
+
+const DriverCombobox = ({ drivers, value, onValueChange, placeholder, disabled }: DriverComboboxProps) => {
+  const [open, setOpen] = useState(false);
+  const selectedDriver = drivers.find((driver) => driver.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className="h-11 w-full justify-between rounded-sm border-border bg-input px-3 data-mono text-left font-normal hover:bg-input"
+        >
+          <span className="min-w-0 truncate">
+            {selectedDriver ? `#${selectedDriver.number} ${selectedDriver.name}` : placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
+        <Command>
+          <CommandInput placeholder="Search driver, team, or number..." />
+          <CommandList>
+            <CommandEmpty>No driver found.</CommandEmpty>
+            <CommandGroup>
+              {drivers.map((driver) => (
+                <CommandItem
+                  key={driver.id}
+                  value={`${driver.name} ${driver.team} ${driver.number} ${driver.id}`}
+                  onSelect={() => {
+                    onValueChange(driver.id);
+                    setOpen(false);
+                  }}
+                  className="gap-2"
+                >
+                  <span className="h-2 w-2 shrink-0 bg-signal" />
+                  <span className="min-w-0 flex-1 truncate">
+                    #{driver.number} {driver.name}
+                  </span>
+                  <span className="data-mono hidden shrink-0 text-[10px] uppercase text-muted-foreground sm:inline">
+                    {driver.team}
+                  </span>
+                  <Check className={cn("h-4 w-4 shrink-0", value === driver.id ? "opacity-100" : "opacity-0")} />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
   const { user } = useAuth();
@@ -151,27 +217,13 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
                   <div className="data-mono mt-1 truncate text-[10px] uppercase text-muted-foreground">{value ? driverMeta(value) : "SELECT FROM DRIVER LIST"}</div>
                 </div>
                 <div className="min-w-0 md:col-span-5">
-                  <Select
+                  <DriverCombobox
+                    drivers={drivers.filter((driver) => driver.id === value || !selected.includes(driver.id))}
                     value={value}
                     onValueChange={slot.key === "p1" ? setP1 : slot.key === "p2" ? setP2 : setP3}
+                    placeholder={`Select ${slot.label}`}
                     disabled={locked}
-                  >
-                    <SelectTrigger className="h-11 rounded-sm border-border bg-input data-mono">
-                      <SelectValue placeholder={`Select ${slot.label}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {drivers
-                        .filter((driver) => driver.id === value || !selected.includes(driver.id))
-                        .map((driver) => (
-                          <SelectItem key={driver.id} value={driver.id}>
-                            <span className="flex items-center gap-2">
-                              <span className="h-2 w-2 shrink-0 bg-signal" />
-                              #{driver.number} {driver.name}
-                            </span>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
               </div>
             );
@@ -182,18 +234,13 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label className="label-eyebrow mb-2 block">{isSprint ? "Sprint pole" : "Pole position"} / +{10 * pointMultiplier} pts</Label>
-              <Select value={pole} onValueChange={setPole} disabled={locked}>
-                <SelectTrigger className="h-11 rounded-sm border-border bg-input data-mono">
-                  <SelectValue placeholder="Select pole position" />
-                </SelectTrigger>
-                <SelectContent>
-                  {drivers.map((driver) => (
-                    <SelectItem key={driver.id} value={driver.id}>
-                      #{driver.number} {driver.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DriverCombobox
+                drivers={drivers}
+                value={pole}
+                onValueChange={setPole}
+                placeholder="Select pole position"
+                disabled={locked}
+              />
             </div>
 
             <div>
