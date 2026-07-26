@@ -61,6 +61,7 @@ export class User {
     const collection = db.collection<UserDocument>("users");
     
     if (typeof id === "string") {
+      if (!ObjectId.isValid(id)) return null;
       id = new ObjectId(id);
     }
 
@@ -70,19 +71,19 @@ export class User {
   static async updateUsername(id: string | ObjectId, username: string): Promise<UserDocument | null> {
     const db = getDB();
     const collection = db.collection<UserDocument>("users");
-    
+    if (typeof id === "string" && !ObjectId.isValid(id)) {
+      return null;
+    }
+    const userObjectId = typeof id === "string" ? new ObjectId(id) : id;
+
     // Check if username already exists
-    const existing = await collection.findOne({ username });
+    const existing = await collection.findOne({ username, _id: { $ne: userObjectId } });
     if (existing) {
       throw new Error("Username is already taken");
     }
-    
-    if (typeof id === "string") {
-      id = new ObjectId(id);
-    }
 
     const result = await collection.findOneAndUpdate(
-      { _id: id },
+      { _id: userObjectId },
       { $set: { username, updatedAt: new Date() } },
       { returnDocument: 'after' }
     );
@@ -99,6 +100,7 @@ export class User {
     const collection = db.collection<UserDocument>("users");
     
     if (typeof id === "string") {
+      if (!ObjectId.isValid(id)) return null;
       id = new ObjectId(id);
     }
 

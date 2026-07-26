@@ -22,18 +22,26 @@ export class Results {
 
     const now = new Date();
     const raceId = result.raceId || result.raceWeekendId;
+    if (!raceId) {
+      throw new Error("Missing raceId or raceWeekendId");
+    }
+
     const existing = await collection.findOne({
-      $or: [{ raceWeekendId: raceId }, { raceId: raceId }],
+      $or: [{ raceWeekendId: raceId }, { raceId }],
       type: result.type,
     });
 
+    const updateFields = { ...result, raceId };
+    if ('raceWeekendId' in updateFields) {
+      delete (updateFields as any).raceWeekendId;
+    }
+
     if (existing) {
       const updated = await collection.findOneAndUpdate(
-        { $or: [{ raceWeekendId: raceId }, { raceId: raceId }], type: result.type },
+        { _id: existing._id },
         {
           $set: {
-            ...result,
-            raceId: raceId,
+            ...updateFields,
             updatedAt: now,
           },
         },
@@ -46,10 +54,10 @@ export class Results {
     }
 
     const insertResult = await collection.insertOne({
-      ...result,
+      ...updateFields,
       createdAt: now,
       updatedAt: now,
-    });
+    } as any);
 
     const created = await collection.findOne({ _id: insertResult.insertedId });
     if (!created) {

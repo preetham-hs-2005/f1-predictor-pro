@@ -1,9 +1,10 @@
 import { MongoClient, Db } from "mongodb";
 
 let db: Db | null = null;
+let client: MongoClient | null = null;
 
 export async function connectDB(): Promise<Db> {
-  if (db) {
+  if (db && client) {
     return db;
   }
 
@@ -13,14 +14,19 @@ export async function connectDB(): Promise<Db> {
     throw new Error("MONGODB_URI is required");
   }
 
-  const client = new MongoClient(mongoUri);
+  client = new MongoClient(mongoUri);
   await client.connect();
 
   db = client.db("f1_prediction_league");
   
   // Create indexes
-  const usersCollection = db.collection("users");
-  await usersCollection.createIndex({ email: 1 }, { unique: true });
+  await db.collection("users").createIndex({ email: 1 }, { unique: true });
+  await db.collection("users").createIndex({ username: 1 }, { unique: true, sparse: true });
+  await db.collection("predictions").createIndex({ userId: 1, raceWeekendId: 1, type: 1 });
+  await db.collection("messages").createIndex({ discussionId: 1, createdAt: 1 });
+  await db.collection("scores").createIndex({ userId: 1 });
+  await db.collection("races").createIndex({ raceId: 1 });
+  await db.collection("pollVotes").createIndex({ pollId: 1, userId: 1 }, { unique: true });
 
   console.log("✅ Connected to MongoDB");
   return db;
@@ -31,4 +37,13 @@ export function getDB(): Db {
     throw new Error("Database not connected. Call connectDB() first.");
   }
   return db;
+}
+
+export async function closeDB(): Promise<void> {
+  if (client) {
+    await client.close();
+    client = null;
+    db = null;
+    console.log("🔌 Connected database connection closed gracefully");
+  }
 }

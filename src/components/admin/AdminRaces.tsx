@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Loader2, X, Plus, AlertCircle, CheckCircle2, Zap } from "lucide-react";
+import { Loader2, X, Plus, AlertCircle, CheckCircle2, Zap, Pencil } from "lucide-react";
 import {
   getAdminRaces,
   toggleRaceCancelled,
   addAdminRace,
+  updateAdminRace,
   deleteAdminRace,
   seedDefaultRaces,
   type AdminRace,
@@ -22,6 +23,7 @@ const AdminRaces = () => {
   const [showForm, setShowForm] = useState(false);
   const [adding, setAdding] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [editingRace, setEditingRace] = useState<AdminRace | null>(null);
 
   const [formData, setFormData] = useState({
     raceId: "",
@@ -82,8 +84,8 @@ const AdminRaces = () => {
     try {
       const success = await deleteAdminRace(raceId);
       if (success) {
-        setRaces((prev) => prev.filter((r) => r.raceId !== raceId));
-        toast.success("Race deleted successfully");
+        toast.success("Race deleted successfully and rounds resequenced");
+        await loadRaces();
       } else {
         toast.error("Failed to delete race");
       }
@@ -114,7 +116,41 @@ const AdminRaces = () => {
     }
   };
 
-  const handleAddRace = async (e: React.FormEvent) => {
+  const handleStartEdit = (race: AdminRace) => {
+    setEditingRace(race);
+    setFormData({
+      raceId: race.raceId,
+      raceName: race.raceName,
+      round: String(race.round),
+      countryFlag: race.countryFlag || "",
+      circuitName: race.circuitName || "",
+      qualifyingStartTime: race.qualifyingStartTime ? race.qualifyingStartTime.slice(0, 16) : "",
+      raceStartTime: race.raceStartTime ? race.raceStartTime.slice(0, 16) : "",
+      timeZone: race.timeZone || "UTC",
+      sprintWeekend: race.sprintWeekend || false,
+      sprintQualifyingStartTime: race.sprintQualifyingStartTime ? race.sprintQualifyingStartTime.slice(0, 16) : "",
+    });
+    setShowForm(true);
+  };
+
+  const handleCancelForm = () => {
+    setFormData({
+      raceId: "",
+      raceName: "",
+      round: "",
+      countryFlag: "",
+      circuitName: "",
+      qualifyingStartTime: "",
+      raceStartTime: "",
+      timeZone: "UTC",
+      sprintWeekend: false,
+      sprintQualifyingStartTime: "",
+    });
+    setEditingRace(null);
+    setShowForm(false);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.raceId || !formData.raceName || !formData.round) {
@@ -124,7 +160,7 @@ const AdminRaces = () => {
 
     setAdding(true);
     try {
-      const newRace = await addAdminRace({
+      const racePayload = {
         raceId: formData.raceId,
         raceName: formData.raceName,
         round: parseInt(formData.round),
@@ -136,30 +172,30 @@ const AdminRaces = () => {
         sprintWeekend: formData.sprintWeekend,
         sprintQualifyingStartTime: formData.sprintQualifyingStartTime || undefined,
         cancelled: false,
-      });
+      };
 
-      if (newRace) {
-        setRaces((prev) => [...prev, newRace].sort((a, b) => a.round - b.round));
-        setFormData({
-          raceId: "",
-          raceName: "",
-          round: "",
-          countryFlag: "",
-          circuitName: "",
-          qualifyingStartTime: "",
-          raceStartTime: "",
-          timeZone: "UTC",
-          sprintWeekend: false,
-          sprintQualifyingStartTime: "",
-        });
-        setShowForm(false);
-        toast.success("Race added successfully");
+      if (editingRace) {
+        const updated = await updateAdminRace(editingRace.raceId, racePayload);
+        if (updated) {
+          toast.success("Race updated successfully");
+          handleCancelForm();
+          await loadRaces();
+        } else {
+          toast.error("Failed to update race");
+        }
       } else {
-        toast.error("Failed to add race");
+        const newRace = await addAdminRace(racePayload);
+        if (newRace) {
+          toast.success("Race added successfully");
+          handleCancelForm();
+          await loadRaces();
+        } else {
+          toast.error("Failed to add race");
+        }
       }
     } catch (error) {
       const err = error as any;
-      toast.error(err?.message || "Failed to add race");
+      toast.error(err?.message || "Operation failed");
     } finally {
       setAdding(false);
     }
@@ -177,7 +213,7 @@ const AdminRaces = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Add Button */}
+      {/* Header with Add/Edit Button */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="f1-heading text-lg">Race Management</h2>
@@ -186,22 +222,30 @@ const AdminRaces = () => {
           </p>
         </div>
         <Button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) {
+              handleCancelForm();
+            } else {
+              setShowForm(true);
+            }
+          }}
           className="gap-2"
         >
-          <Plus className="h-4 w-4" />
-          Add Race
+          {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {showForm ? "Close Form" : "Add Race"}
         </Button>
       </div>
 
-      {/* Add Race Form */}
+      {/* Add/Edit Race Form */}
       {showForm && (
         <Card className="glass border-0">
           <CardHeader>
-            <CardTitle className="text-base">Add New Race</CardTitle>
+            <CardTitle className="text-base">
+              {editingRace ? `Edit Race: ${editingRace.raceName}` : "Add New Race"}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAddRace} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium">Race ID *</label>
@@ -210,6 +254,7 @@ const AdminRaces = () => {
                     value={formData.raceId}
                     onChange={(e) => setFormData({ ...formData, raceId: e.target.value })}
                     className="mt-1"
+                    disabled={!!editingRace} // Prevent changing ID for existing race
                   />
                 </div>
                 <div>
@@ -322,12 +367,12 @@ const AdminRaces = () => {
               <div className="flex gap-2">
                 <Button type="submit" disabled={adding} className="flex-1">
                   {adding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Add Race
+                  {editingRace ? "Update Race" : "Add Race"}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setShowForm(false)}
+                  onClick={handleCancelForm}
                   className="flex-1"
                 >
                   Cancel
@@ -402,6 +447,16 @@ const AdminRaces = () => {
               </div>
 
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleStartEdit(race)}
+                  className="gap-1"
+                >
+                  <Pencil className="h-3 w-3" />
+                  Edit
+                </Button>
+
                 <Button
                   size="sm"
                   variant={race.cancelled ? "outline" : "destructive"}

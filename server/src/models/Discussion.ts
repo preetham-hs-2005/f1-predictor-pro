@@ -128,6 +128,17 @@ export class Discussion {
     await collection.updateOne({ _id: id }, { $inc: { messageCount: 1 } });
   }
 
+  static async decrementMessageCount(id: string | ObjectId): Promise<void> {
+    const db = getDB();
+    const collection = db.collection<DiscussionDocument>("discussions");
+
+    if (typeof id === "string") {
+      id = new ObjectId(id);
+    }
+
+    await collection.updateOne({ _id: id }, { $inc: { messageCount: -1 } });
+  }
+
   static async delete(id: string | ObjectId): Promise<boolean> {
     const db = getDB();
     const collection = db.collection<DiscussionDocument>("discussions");

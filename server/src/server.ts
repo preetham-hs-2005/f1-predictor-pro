@@ -1,10 +1,10 @@
-import "dotenv/config";
 import dns from "dns";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
-// Load .env.local explicitly
+// Load default .env first, then .env.local explicitly to override
+dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env.local") });
@@ -31,7 +31,7 @@ import express from "express";
 import cors from "cors";
 import http from "http";
 import { WebSocketServer } from "ws";
-import { connectDB } from "./utils/db.js";
+import { connectDB, closeDB } from "./utils/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import authRoutes from "./routes/auth.js";
 import predictionsRoutes from "./routes/predictions.js";
@@ -42,6 +42,7 @@ import driversRoutes from "./routes/drivers.js";
 import openF1Routes from "./routes/openf1.js";
 import formula1Routes from "./routes/formula1.js";
 import { Driver } from "./models/Driver.js";
+import { verifyToken } from "./utils/jwt.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -64,29 +65,48 @@ wss.on("connection", (ws) => {
       const message = JSON.parse(data);
       
       if (message.type === "join") {
+        if (!message.token) {
+          ws.close(4001, "Unauthorized");
+          return;
+        }
+        const payload = verifyToken(message.token);
+        if (!payload) {
+          ws.close(4001, "Unauthorized");
+          return;
+        }
         // User joins a discussion room
-        clients.set(ws, { userId: message.userId, discussionId: message.discussionId });
+        clients.set(ws, { userId: payload.userId, discussionId: message.discussionId });
         
         // Notify others in the same discussion
         broadcastToDiscussion(message.discussionId, {
           type: "user-joined",
-          userId: message.userId,
-          userName: message.userName,
+          userId: payload.userId,
+          userName: payload.name,
         }, ws);
       } else if (message.type === "message") {
+        const clientInfo = clients.get(ws);
+        if (!clientInfo) {
+          ws.close(4001, "Unauthorized");
+          return;
+        }
         // Broadcast message to all clients in the same discussion
-        broadcastToDiscussion(clients.get(ws)?.discussionId || "", {
+        broadcastToDiscussion(clientInfo.discussionId, {
           type: "new-message",
           messageId: message.messageId,
-          discussionId: clients.get(ws)?.discussionId,
-          userId: message.userId,
+          discussionId: clientInfo.discussionId,
+          userId: clientInfo.userId,
           userName: message.userName,
           content: message.content,
           timestamp: new Date(),
         });
       } else if (message.type === "poll-vote") {
+        const clientInfo = clients.get(ws);
+        if (!clientInfo) {
+          ws.close(4001, "Unauthorized");
+          return;
+        }
         // Broadcast poll update to all clients in the same discussion
-        broadcastToDiscussion(clients.get(ws)?.discussionId || "", {
+        broadcastToDiscussion(clientInfo.discussionId, {
           type: "poll-updated",
           pollId: message.pollId,
           voteCounts: message.voteCounts,
@@ -118,22 +138,30 @@ function broadcastToDiscussion(discussionId: string, message: any, exclude?: any
   });
 }
 
-// Middleware
+const allowedOrigins = process.env.CORS_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) || [
+  "http://localhost:5173",
+  "http://localhost:8080",
+  "http://localhost:8081",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:8080",
+  "http://127.0.0.1:8081",
+  "https://f1-predictor-pro-six.vercel.app",
+  "https://f1predict.dev",
+  "https://www.f1predict.dev"
+];
+
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://localhost:8080",
-    "http://localhost:8081",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:8081",
-    "https://f1-predictor-pro-six.vercel.app",
-    "https://f1predict.dev",
-    "https://www.f1predict.dev"
-  ],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*")) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -152,6 +180,8 @@ app.get("/health", (req, res) => {
 
 // Error handling
 app.use(errorHandler);
+
+
 
 // 404 handler
 app.use((req, res) => {
@@ -176,5 +206,25 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// Graceful shutdown handlers
+async function gracefulShutdown(signal: string) {
+  console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
+  server.close(async () => {
+    console.log("HTTP/WebSocket server closed.");
+    await closeDB();
+    console.log("Graceful shutdown complete.");
+    process.exit(0);
+  });
+
+  // Force shutdown after 10s
+  setTimeout(() => {
+    console.error("Could not close connections in time, forcefully shutting down");
+    process.exit(1);
+  }, 10000);
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 startServer();

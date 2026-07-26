@@ -431,9 +431,6 @@ export async function toggleRaceCancelled(raceId: string): Promise<boolean> {
   }
 }
 
-/**
- * Add a new race
- */
 export async function addAdminRace(race: Omit<AdminRace, "id" | "createdAt" | "updatedAt">): Promise<AdminRace | null> {
   try {
     const response = await client.request<{ success: boolean; data: AdminRace }>(
@@ -446,6 +443,28 @@ export async function addAdminRace(race: Omit<AdminRace, "id" | "createdAt" | "u
     return response.data || null;
   } catch (error) {
     console.error("Failed to add race:", error);
+    throw error;
+  }
+}
+
+/**
+ * Update an existing race
+ */
+export async function updateAdminRace(
+  raceId: string,
+  race: Partial<Omit<AdminRace, "id" | "createdAt" | "updatedAt">>
+): Promise<AdminRace | null> {
+  try {
+    const response = await client.request<{ success: boolean; data: AdminRace }>(
+      `/api/admin/races/${raceId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(race),
+      }
+    );
+    return response.data || null;
+  } catch (error) {
+    console.error("Failed to update race:", error);
     throw error;
   }
 }

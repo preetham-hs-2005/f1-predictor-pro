@@ -71,12 +71,12 @@ export async function getDiscussions(
 /**
  * Get single discussion with messages and polls
  */
-export async function getDiscussion(id: string): Promise<{
+export async function getDiscussion(id: string, incrementView: boolean = false): Promise<{
   discussion: Discussion;
   messages: Message[];
   polls: Poll[];
 }> {
-  return apiClient.get(`/api/discussions/${id}`);
+  return apiClient.get(`/api/discussions/${id}${incrementView ? "?incrementView=true" : ""}`);
 }
 
 /**

@@ -140,7 +140,7 @@ const PredictionForm = ({ race, type, locked }: PredictionFormProps) => {
 
   const canSubmit = p1 && p2 && p3 && pole && constructor && unexpected.length >= 10 && !locked && !loading;
   const filled = [p1, p2, p3, pole, constructor].filter(Boolean).length;
-  const estimatedPoints = (25 + 20 + 15 + 20 + 10 + 15) * pointMultiplier;
+  const estimatedPoints = (25 + 20 + 15 + 10 + 10 + 15) * pointMultiplier;
 
   const driverName = (id: string) => drivers.find((driver) => driver.id === id)?.name ?? "Unassigned";
   const driverMeta = (id: string) => {

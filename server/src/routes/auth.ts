@@ -2,19 +2,17 @@ import { Router, Request, Response } from "express";
 import { User } from "../models/User.js";
 import { generateToken } from "../utils/jwt.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { rateLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
+const authLimiter = rateLimiter(15 * 60 * 1000, 50); // max 50 requests per 15 mins per IP
 
 // POST /api/auth/register
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register", authLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, password, username } = req.body;
 
-    console.log("Register request received:", { name, username, email, passwordLength: password?.length });
-
-    // Validation
     if (!name || !email || !password || !username) {
-      console.log("Missing fields:", { name: !!name, username: !!username, email: !!email, password: !!password });
       return res.status(400).json({
         success: false,
         error: "Name, username, email, and password are required",
@@ -28,7 +26,6 @@ router.post("/register", async (req: Request, res: Response) => {
     const trimmedUsername = String(username).trim();
 
     if (!trimmedName || !trimmedEmail || !trimmedPassword || !trimmedUsername) {
-      console.log("Empty after trim");
       return res.status(400).json({
         success: false,
         error: "Name, username, email, and password cannot be empty",
@@ -36,7 +33,6 @@ router.post("/register", async (req: Request, res: Response) => {
     }
 
     if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
-      console.log("Username invalid length:", trimmedUsername.length);
       return res.status(400).json({
         success: false,
         error: "Username must be 3-20 characters",
@@ -45,7 +41,6 @@ router.post("/register", async (req: Request, res: Response) => {
     
     const usernameRegex = /^[a-zA-Z0-9_-]+$/;
     if (!usernameRegex.test(trimmedUsername)) {
-      console.log("Invalid username format:", trimmedUsername);
       return res.status(400).json({
         success: false,
         error: "Username can only contain letters, numbers, underscores, and hyphens",
@@ -53,7 +48,6 @@ router.post("/register", async (req: Request, res: Response) => {
     }
 
     if (trimmedPassword.length < 8) {
-      console.log("Password too short:", trimmedPassword.length);
       return res.status(400).json({
         success: false,
         error: "Password must be at least 8 characters",
@@ -61,7 +55,6 @@ router.post("/register", async (req: Request, res: Response) => {
     }
 
     if (trimmedName.length < 2 || trimmedName.length > 50) {
-      console.log("Name invalid length:", trimmedName.length);
       return res.status(400).json({
         success: false,
         error: "Name must be 2-50 characters",
@@ -71,7 +64,6 @@ router.post("/register", async (req: Request, res: Response) => {
     // Simple email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      console.log("Invalid email format:", trimmedEmail);
       return res.status(400).json({
         success: false,
         error: "Please provide a valid email address",
@@ -87,12 +79,8 @@ router.post("/register", async (req: Request, res: Response) => {
       role: user.role,
     });
 
-    console.log("User registered successfully:", user._id);
-    console.log("Token generated, response includes:", { success: true, hasToken: !!token, user: User.formatResponse(user) });
-
     res.status(201).json({
       success: true,
-      data: User.formatResponse(user),
       user: User.formatResponse(user),
       token,
     });
@@ -104,7 +92,7 @@ router.post("/register", async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/login
-router.post("/login", async (req: Request, res: Response) => {
+router.post("/login", authLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -139,12 +127,8 @@ router.post("/login", async (req: Request, res: Response) => {
       role: user.role,
     });
 
-    console.log("User logged in successfully:", user._id);
-    console.log("Token generated, response includes:", { success: true, hasToken: !!token, user: User.formatResponse(user) });
-
     res.json({
       success: true,
-      data: User.formatResponse(user),
       user: User.formatResponse(user),
       token,
     });
@@ -174,7 +158,6 @@ router.get("/me", authMiddleware, async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: User.formatResponse(user),
       user: User.formatResponse(user),
     });
   } catch (error) {
@@ -225,7 +208,6 @@ router.put("/username", authMiddleware, async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: User.formatResponse(user),
       user: User.formatResponse(user),
       token,
     });
@@ -269,7 +251,6 @@ router.put("/profile", authMiddleware, async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: User.formatResponse(user),
       user: User.formatResponse(user),
       token,
     });

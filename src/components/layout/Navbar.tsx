@@ -29,6 +29,8 @@ import {
 import { EditProfileModal } from "@/components/profile/EditProfileModal";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { cn } from "@/lib/utils";
+import { getUpcomingRacesFromServer, type ServerRace } from "@/lib/api/races";
+import { getPredictionLockTime, type RaceWeekend } from "@/lib/data/raceCalendar";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, code: "DSH" },
@@ -72,13 +74,99 @@ function StatusBar() {
 }
 
 function RaceCountdownBar() {
+  const [nextRace, setNextRace] = useState<ServerRace | null>(null);
+  const [timeLeft, setTimeLeft] = useState<string>("");
+
+  useEffect(() => {
+    let active = true;
+    const fetchNext = async () => {
+      try {
+        const upcoming = await getUpcomingRacesFromServer();
+        if (upcoming && upcoming.length > 0 && active) {
+          setNextRace(upcoming[0]);
+        }
+      } catch (err) {
+        console.error("Failed to load countdown race:", err);
+      }
+    };
+    fetchNext();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!nextRace) return;
+
+    const raceObj: RaceWeekend = {
+      id: nextRace.raceId,
+      raceName: nextRace.raceName,
+      circuitName: nextRace.circuitName,
+      countryFlag: nextRace.countryFlag,
+      round: nextRace.round,
+      qualifyingStartTime: nextRace.qualifyingStartTime,
+      raceStartTime: nextRace.raceStartTime,
+      sprintWeekend: nextRace.sprintWeekend,
+      sprintQualifyingStartTime: nextRace.sprintQualifyingStartTime,
+      sprintStartTime: nextRace.sprintStartTime,
+      timeZone: nextRace.timeZone,
+      cancelled: nextRace.cancelled,
+    };
+
+    const updateCountdown = () => {
+      let lockTime = getPredictionLockTime(raceObj, "race");
+      if (raceObj.sprintWeekend && raceObj.sprintQualifyingStartTime) {
+        const sprintLock = getPredictionLockTime(raceObj, "sprint");
+        if (sprintLock && sprintLock > new Date() && (!lockTime || sprintLock < lockTime)) {
+          lockTime = sprintLock;
+        }
+      }
+
+      if (!lockTime) {
+        setTimeLeft("Locked");
+        return;
+      }
+
+      const diff = lockTime.getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeft("Locked");
+        return;
+      }
+
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const m = Math.floor((diff / (1000 * 60)) % 60);
+      const s = Math.floor((diff / 1000) % 60);
+
+      const parts = [];
+      if (d > 0) parts.push(`${d}d`);
+      parts.push(`${String(h).padStart(2, "0")}h`);
+      parts.push(`${String(m).padStart(2, "0")}m`);
+      if (d === 0) {
+        parts.push(`${String(s).padStart(2, "0")}s`);
+      }
+
+      setTimeLeft(parts.join(" "));
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [nextRace]);
+
+  if (!nextRace || !timeLeft) {
+    return null;
+  }
+
   return (
     <div className="fixed left-0 right-0 top-[28px] z-40 border-b border-signal/20 bg-background/95 backdrop-blur lg:left-[240px]">
       <div className="mx-auto flex max-w-[1600px] items-center gap-3 px-4 py-2 data-mono text-[10px] uppercase text-muted-foreground sm:px-6 lg:px-8">
         <CalendarClock className="h-3.5 w-3.5 text-signal" />
         <span className="text-signal">Next Lock Window</span>
         <span className="h-3 w-px bg-border" />
-        <span className="truncate text-white">Monaco GP - 2d 04h 12m</span>
+        <span className="truncate text-white">
+          {nextRace.raceName.replace(" Grand Prix", " GP")} - {timeLeft}
+        </span>
       </div>
     </div>
   );

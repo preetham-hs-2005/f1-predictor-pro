@@ -232,8 +232,6 @@ router.get("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
 // PUT /api/predictions/:raceWeekendId
 router.put("/:raceWeekendId", authMiddleware, async (req: Request, res: Response) => {
   try {
-    console.log("PUT /api/predictions/:raceWeekendId called");
-    
     if (!req.user) {
       return res.status(401).json({ success: false, error: "Not authenticated" });
     }
@@ -248,8 +246,6 @@ router.put("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
       predictedConstructor,
       unexpectedStatement,
     } = req.body;
-
-    console.log("Update request:", { raceWeekendId, type, predictedP1, predictedPole, predictedConstructor, unexpectedStatement });
 
     await assertPredictionWindowOpen(raceWeekendId, type);
 
@@ -274,8 +270,6 @@ router.put("/:raceWeekendId", authMiddleware, async (req: Request, res: Response
       ...(predictedConstructor !== undefined && { predictedConstructor }),
       ...(unexpectedStatement !== undefined && { unexpectedStatement }),
     };
-
-    console.log("Updates object:", updatesObj);
 
     const prediction = await Prediction.update(existing._id!, updatesObj);
 

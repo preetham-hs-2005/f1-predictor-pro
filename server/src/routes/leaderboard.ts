@@ -98,7 +98,6 @@ router.get("/results/:raceWeekendId", async (req: Request, res: Response) => {
     const { raceWeekendId } = req.params;
 
     const results = await Results.findByRace(raceWeekendId);
-    console.log(`[RESULTS API] Fetching for ${raceWeekendId}: Found ${results.length} results. Docs:`, JSON.stringify(results));
 
     res.json({
       success: true,

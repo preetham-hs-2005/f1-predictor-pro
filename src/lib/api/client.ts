@@ -33,14 +33,10 @@ class ApiClient {
     try {
       const session = localStorage.getItem("f1_session");
       if (session) {
-        const userData = JSON.parse(session);
-        const token = userData.token || null;
-        console.log("[ApiClient] getAuthToken found token:", !!token);
-        return token;
+        const sessionData = JSON.parse(session);
+        return sessionData.token || null;
       }
-      console.log("[ApiClient] getAuthToken: no session in localStorage");
-    } catch (error) {
-      console.error("[ApiClient] getAuthToken error:", error);
+    } catch {
       return null;
     }
     return null;
@@ -50,12 +46,8 @@ class ApiClient {
    * Store token in localStorage
    */
   setAuthToken(token: string, user: unknown): void {
-    const sessionData = { ...user as Record<string, unknown>, token };
+    const sessionData = { user, token };
     localStorage.setItem("f1_session", JSON.stringify(sessionData));
-    console.log("[ApiClient] setAuthToken: stored session with token", {
-      hasToken: !!token,
-      keys: Object.keys(sessionData),
-    });
   }
 
   /**
@@ -81,9 +73,6 @@ class ApiClient {
     const token = this.getAuthToken();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
-      console.log("[ApiClient] request: Authorization header set");
-    } else {
-      console.log("[ApiClient] request: No token found, request will not include Authorization");
     }
 
     try {

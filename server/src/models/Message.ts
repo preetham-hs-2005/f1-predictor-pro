@@ -8,6 +8,7 @@ export interface MessageDocument {
   userName: string;
   content: string;
   likes: number;
+  likedBy?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +24,7 @@ export class Message {
     const result = await collection.insertOne({
       ...message,
       likes: 0,
+      likedBy: [],
       createdAt: now,
       updatedAt: now,
     });
@@ -89,7 +91,7 @@ export class Message {
     return result || null;
   }
 
-  static async likesIncrement(id: string | ObjectId): Promise<void> {
+  static async toggleLike(id: string | ObjectId, userId: string): Promise<MessageDocument | null> {
     const db = getDB();
     const collection = db.collection<MessageDocument>("messages");
 
@@ -97,7 +99,35 @@ export class Message {
       id = new ObjectId(id);
     }
 
-    await collection.updateOne({ _id: id }, { $inc: { likes: 1 } });
+    const message = await collection.findOne({ _id: id });
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    const likedBy = message.likedBy || [];
+    const hasLiked = likedBy.includes(userId);
+
+    if (hasLiked) {
+      return collection.findOneAndUpdate(
+        { _id: id },
+        {
+          $pull: { likedBy: userId },
+          $inc: { likes: -1 },
+          $set: { updatedAt: new Date() }
+        },
+        { returnDocument: "after" }
+      );
+    } else {
+      return collection.findOneAndUpdate(
+        { _id: id },
+        {
+          $addToSet: { likedBy: userId },
+          $inc: { likes: 1 },
+          $set: { updatedAt: new Date() }
+        },
+        { returnDocument: "after" }
+      );
+    }
   }
 
   static async delete(id: string | ObjectId): Promise<boolean> {

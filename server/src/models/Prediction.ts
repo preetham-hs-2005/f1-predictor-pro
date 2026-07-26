@@ -41,6 +41,7 @@ export class Prediction {
     const collection = db.collection<PredictionDocument>("predictions");
 
     if (typeof id === "string") {
+      if (!ObjectId.isValid(id)) return null;
       id = new ObjectId(id);
     }
 
@@ -77,6 +78,7 @@ export class Prediction {
     const collection = db.collection<PredictionDocument>("predictions");
 
     if (typeof id === "string") {
+      if (!ObjectId.isValid(id)) return null;
       id = new ObjectId(id);
     }
 

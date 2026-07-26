@@ -76,7 +76,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
     setError(null);
     discussionIdRef.current = id;
     try {
-      const data = await getDiscussion(id);
+      const data = await getDiscussion(id, true);
       setDiscussion(data.discussion);
       setMessages(data.messages);
       setPolls(data.polls);
@@ -94,6 +94,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
     if (!discussion) return;
 
     const refreshMessages = async () => {
+      if (document.hidden) return;
       try {
         const freshMessages = await getMessages(discussion._id, 1, 100);
         setMessages(freshMessages);
@@ -117,7 +118,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
       if (!discussion) return null;
       try {
         const message = await apiCreateMessage(discussion._id, content);
-        setMessages([...messages, message]);
+        setMessages((prev) => [...prev, message]);
         return message;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create message";
@@ -125,7 +126,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
         return null;
       }
     },
-    [discussion, messages, toast]
+    [discussion, toast]
   );
 
   const deleteMessage = useCallback(
@@ -133,7 +134,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
       if (!discussion) return false;
       try {
         const deleted = await apiDeleteMessage(discussion._id, messageId);
-        setMessages(messages.filter((m) => m._id !== messageId));
+        setMessages((prev) => prev.filter((m) => m._id !== messageId));
         toast({ title: "Success", description: "Message deleted" });
         return deleted;
       } catch (err) {
@@ -142,7 +143,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
         return false;
       }
     },
-    [discussion, messages, toast]
+    [discussion, toast]
   );
 
   const likeMessage = useCallback(
@@ -150,15 +151,15 @@ export const useDiscussion = (): UseDiscussionReturn => {
       if (!discussion) return;
       try {
         const updatedMessage = await apiLikeMessage(discussion._id, messageId);
-        setMessages(
-          messages.map((m) => (m._id === messageId ? { ...m, likes: updatedMessage.likes } : m))
+        setMessages((prev) =>
+          prev.map((m) => (m._id === messageId ? { ...m, likes: updatedMessage.likes } : m))
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to like message";
         toast({ title: "Error", description: message, variant: "destructive" });
       }
     },
-    [discussion, messages, toast]
+    [discussion, toast]
   );
 
   const createPoll = useCallback(
@@ -176,7 +177,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
           type: type as "single" | "multiple",
           options,
         });
-        setPolls([...polls, poll]);
+        setPolls((prev) => [...prev, poll]);
         return poll;
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to create poll";
@@ -184,7 +185,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
         return null;
       }
     },
-    [discussion, polls, toast]
+    [discussion, toast]
   );
 
   const votePoll = useCallback(
@@ -192,8 +193,8 @@ export const useDiscussion = (): UseDiscussionReturn => {
       if (!discussion) return;
       try {
         const result = await apiVotePoll(discussion._id, pollId, selectedOptions);
-        setPolls(
-          polls.map((p) =>
+        setPolls((prev) =>
+          prev.map((p) =>
             p._id === pollId ? { ...p, voteCounts: result.voteCounts } : p
           )
         );
@@ -203,7 +204,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
         toast({ title: "Error", description: message, variant: "destructive" });
       }
     },
-    [discussion, polls, toast]
+    [discussion, toast]
   );
 
   const deletePoll = useCallback(
@@ -211,7 +212,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
       if (!discussion) return false;
       try {
         const deleted = await apiDeletePoll(discussion._id, pollId);
-        setPolls(polls.filter((p) => p._id !== pollId));
+        setPolls((prev) => prev.filter((p) => p._id !== pollId));
         toast({ title: "Success", description: "Poll deleted" });
         return deleted;
       } catch (err) {
@@ -220,7 +221,7 @@ export const useDiscussion = (): UseDiscussionReturn => {
         return false;
       }
     },
-    [discussion, polls, toast]
+    [discussion, toast]
   );
 
   return {

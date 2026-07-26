@@ -51,8 +51,10 @@ router.get("/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: "Discussion not found" });
     }
 
-    // Increment views
-    await Discussion.incrementViews(id);
+    // Increment views if requested
+    if (req.query.incrementView === "true") {
+      await Discussion.incrementViews(id);
+    }
 
     // Get messages
     const messages = await Message.findByDiscussion(id, limitNum, skip);
@@ -289,6 +291,9 @@ router.delete("/:id/messages/:messageId", authMiddleware, async (req: Request, r
     }
 
     const deleted = await Message.delete(messageId);
+    if (deleted) {
+      await Discussion.decrementMessageCount(message.discussionId);
+    }
     res.json({ success: true, deleted });
   } catch (error) {
     console.error("Error deleting message:", error);
@@ -310,8 +315,7 @@ router.post("/:id/messages/:messageId/like", authMiddleware, async (req: Request
       return res.status(404).json({ success: false, error: "Message not found" });
     }
 
-    await Message.likesIncrement(messageId);
-    const updated = await Message.findById(messageId);
+    const updated = await Message.toggleLike(messageId, req.user!.userId);
 
     res.json({ success: true, message: updated });
   } catch (error) {

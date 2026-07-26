@@ -1495,10 +1495,17 @@ router.post("/races", async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: "Race with this ID already exists" });
     }
     
+    const roundNum = Number(round);
+    // Shift rounds up for any race that has round >= roundNum
+    await racesCollection.updateMany(
+      { round: { $gte: roundNum } },
+      { $inc: { round: 1 } }
+    );
+    
     const newRace = {
       raceId,
       raceName,
-      round,
+      round: roundNum,
       countryFlag,
       circuitName,
       qualifyingStartTime,
@@ -1526,6 +1533,92 @@ router.post("/races", async (req: Request, res: Response) => {
 });
 
 /**
+ * PUT /api/admin/races/:raceId
+ * Update details of a race
+ */
+router.put("/races/:raceId", async (req: Request, res: Response) => {
+  try {
+    const db = getDB();
+    const racesCollection = db.collection("races");
+    const { raceId } = req.params;
+    
+    const existing = await racesCollection.findOne({ raceId });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "Race not found" });
+    }
+    
+    const {
+      raceName,
+      round,
+      countryFlag,
+      circuitName,
+      qualifyingStartTime,
+      raceStartTime,
+      timeZone,
+      sprintWeekend,
+      sprintQualifyingStartTime,
+      cancelled,
+      isLocked,
+      isComplete
+    } = req.body;
+    
+    if (round !== undefined && round !== null) {
+      const oldRound = Number(existing.round);
+      const newRound = Number(round);
+      
+      if (oldRound !== newRound) {
+        if (newRound < oldRound) {
+          // Shift all races with newRound <= round < oldRound up by 1
+          await racesCollection.updateMany(
+            { round: { $gte: newRound, $lt: oldRound } },
+            { $inc: { round: 1 } }
+          );
+        } else {
+          // Shift all races with oldRound < round <= newRound down by 1
+          await racesCollection.updateMany(
+            { round: { $gt: oldRound, $lte: newRound } },
+            { $inc: { round: -1 } }
+          );
+        }
+      }
+    }
+    
+    const updates: any = {
+      updatedAt: new Date(),
+    };
+    
+    if (raceName !== undefined) updates.raceName = raceName;
+    if (round !== undefined) updates.round = Number(round);
+    if (countryFlag !== undefined) updates.countryFlag = countryFlag;
+    if (circuitName !== undefined) updates.circuitName = circuitName;
+    if (qualifyingStartTime !== undefined) updates.qualifyingStartTime = qualifyingStartTime;
+    if (raceStartTime !== undefined) updates.raceStartTime = raceStartTime;
+    if (timeZone !== undefined) updates.timeZone = timeZone;
+    if (sprintWeekend !== undefined) updates.sprintWeekend = sprintWeekend;
+    if (sprintQualifyingStartTime !== undefined) updates.sprintQualifyingStartTime = sprintQualifyingStartTime || null;
+    if (cancelled !== undefined) updates.cancelled = cancelled;
+    if (isLocked !== undefined) updates.isLocked = isLocked;
+    if (isComplete !== undefined) updates.isComplete = isComplete;
+    
+    const updated = await racesCollection.findOneAndUpdate(
+      { raceId },
+      { $set: updates },
+      { returnDocument: "after" }
+    );
+    
+    res.json({
+      success: true,
+      data: updated,
+      message: "Race updated successfully",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update race";
+    console.error("Admin update race error:", message);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+/**
  * DELETE /api/admin/races/:raceId
  * Delete a race
  */
@@ -1534,13 +1627,22 @@ router.delete("/races/:raceId", async (req: Request, res: Response) => {
     const db = getDB();
     const racesCollection = db.collection("races");
     
-    const result = await racesCollection.deleteOne({ raceId: req.params.raceId });
-    
-    if (result.deletedCount === 0) {
+    const race = await racesCollection.findOne({ raceId: req.params.raceId });
+    if (!race) {
       return res.status(404).json({ success: false, error: "Race not found" });
     }
     
-    res.json({ success: true, message: "Race deleted successfully" });
+    const result = await racesCollection.deleteOne({ raceId: req.params.raceId });
+    
+    if (result.deletedCount > 0) {
+      // Shift rounds down for any race that has round > race.round
+      await racesCollection.updateMany(
+        { round: { $gt: race.round } },
+        { $inc: { round: -1 } }
+      );
+    }
+    
+    res.json({ success: true, message: "Race deleted successfully and rounds resequenced" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete race";
     console.error("Admin delete race error:", message);

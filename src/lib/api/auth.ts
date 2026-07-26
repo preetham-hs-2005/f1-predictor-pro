@@ -37,24 +37,18 @@ export async function loginUser(
   email: string,
   password: string
 ): Promise<AuthUser> {
-  console.log("[AuthAPI] loginUser called with email:", email);
   const response = await apiClient.post<AuthResponse>("/api/auth/login", {
     email,
     password,
   });
 
-  console.log("[AuthAPI] loginUser response:", { success: response.success, hasUser: !!response.user, hasToken: !!response.token });
 
   if (!response.success || !response.user) {
     throw new Error(response.error || "Login failed");
   }
 
-  // Store token if provided
   if (response.token) {
-    console.log("[AuthAPI] loginUser: storing token via setAuthToken");
     apiClient.setAuthToken(response.token, response.user);
-  } else {
-    console.warn("[AuthAPI] loginUser: no token in response!");
   }
 
   return response.user;
